@@ -31,8 +31,8 @@ export default function LoginPage() {
       }
       const data = await res.json();
 
-      localStorage.setItem('token', data.token);
-      router.push('/trips');
+      localStorage.setItem('token', data.access_token);
+      router.push('/home');
     } catch (error: unknown) {
       if (error instanceof Error) {
         setError(error.message);
