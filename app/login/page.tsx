@@ -61,7 +61,7 @@ export default function LoginPage() {
         {error && <p className='text-red-500 mb-4'>{error}</p>}
 
         <div className='mb-4'>
-          <label className='block text-sm font-medium text-gray-700 mb-2'>Email</label>
+          <label className='block text-sm font-medium text-gray-700 mb-2 text-left'>Email</label>
           <input
             type="text"
             value={email}
@@ -83,7 +83,7 @@ export default function LoginPage() {
         </div>
 
         <div className='mb-6'>
-          <label className='block text-sm font-medium text-gray-700 mb-2'>Password</label>
+          <label className='block text-sm font-medium text-gray-700 mb-2 text-left'>Password</label>
           <input
             type="password"
             value={password}
