@@ -119,7 +119,7 @@ export default function HomePage() {
                     <div className="flex justify-center mt-2">
                       <button
                         onClick={(e) => {
-                          e.stopPropagation(); // evita navegar pro /trip/:id
+                          e.stopPropagation();
                           setDestinationsTripId(trip.id);
                         }}
                         className="text-xs text-purple-500 border border-purple-300 rounded-lg px-3 py-1 hover:bg-purple-50">
