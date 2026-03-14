@@ -42,24 +42,17 @@ const totalDays = (startDate: string, endDate: string) => {
     (new Date(endDate).getTime() - new Date(startDate).getTime())
     / (1000 * 60 * 60 * 24)
   )
-
 }
 
 export default function TripHeader({ trip, isCompleted, activeTab, onTabChange }: TripHeroProps) {
   const router = useRouter();
 
-
   const total = totalDays(trip.startDate, trip.endDate);
 
   return (
     <div className="bg-gradient-to-br from-violet-900 via-purple-700 to-purple-500 pt-10 pb-0 px-8 relative overflow-hidden">
-
-      {/* efeito de luz no fundo */}
       <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_80%_20%,_#a78bfa,_transparent_60%)]" />
-
       <div className="max-w-6xl mx-auto relative z-10">
-
-        {/* botão voltar */}
         <button
           onClick={() => router.back()}
           className="text-white/60 hover:text-white text-sm mb-6 flex items-center gap-1 transition-colors"
@@ -67,7 +60,6 @@ export default function TripHeader({ trip, isCompleted, activeTab, onTabChange }
           ← Back to trips
         </button>
 
-        {/* título + badge + visa */}
         <div className="flex justify-between items-start mb-4">
           <div>
             <h1 className="text-4xl font-bold text-white">{trip.title}</h1>

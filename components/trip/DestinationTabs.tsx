@@ -35,7 +35,7 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
     return null;
   }
   activeDestination ??= destinations[0];
-  console.log('Active destination:', activeTab);
+
   const activePlaces = places[activeTab] ?? [];
 
   return (

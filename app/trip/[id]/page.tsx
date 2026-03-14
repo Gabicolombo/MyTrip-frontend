@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import TripHeader from '@/components/trip/TripHeader';
 import TripInfo from '@/components/trip/sidebar/TripInfo';
 import DestinationTabs from '@/components/trip/DestinationTabs';
+import VisaCheck from '@/components/trip/sidebar/VisaCheck';
 
 const TRIP_DETAILS_QUERY = `
   query tripDetails($id: Int!) {
@@ -139,6 +140,10 @@ export default function TripDetailsPage() {
             status={isCompleted ? 'Completed' : 'Upcoming'}
           />
           {/* Participants, VisaCheck later */}
+
+          <VisaCheck
+            destinations={trip.destinations.map(d => d.country)}
+          />
         </div>
       </div>
     </main>

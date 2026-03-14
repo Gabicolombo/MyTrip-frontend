@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface Destination {
   city: string;
@@ -21,6 +21,26 @@ export default function AddDestinationsModal({ tripId, onClose, onSuccess }: Add
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [countries, setCountries] = useState<string[]>([]);
+  const [loadingCountries, setLoadingCountries] = useState(true);
+
+  useEffect(() => {
+      async function fetchCountries() {
+        try {
+          const res  = await fetch('https://restcountries.com/v3.1/all?fields=name');
+          const data = await res.json();
+          const names = data
+            .map((c: any) => c.name.common)
+            .sort();
+          setCountries(names);
+        } catch (err) {
+          console.error('Failed to fetch countries', err);
+        } finally {
+          setLoadingCountries(false);
+        }
+      }
+      fetchCountries();
+    }, []);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -116,15 +136,20 @@ export default function AddDestinationsModal({ tripId, onClose, onSuccess }: Add
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-gray-500 uppercase">Country</label>
-                  <input
-                    type="text"
+                  <select
                     value={dest.country}
-                    onChange={(e) => updateDestination(index, 'country', e.target.value.toUpperCase())}
-                    placeholder="e.g. IT"
-                    maxLength={2}
+                    onChange={(e) => updateDestination(index, 'country', e.target.value)}
                     required
-                    className="w-full rounded-lg border text-sm text-gray-400 border-gray-200 bg-white px-3 py-2 focus:ring-2 focus:ring-purple-400 focus:outline-none"
-                  />
+                    disabled={loadingCountries}
+                    className="w-full rounded-lg border text-sm text-gray-500 border-gray-200 bg-white px-3 py-2 focus:ring-2 focus:ring-purple-400 focus:outline-none disabled:opacity-50"
+                  >
+                    <option value="">
+                      {loadingCountries ? 'Loading...' : 'Select country...'}
+                    </option>
+                    {countries.map(c => (
+                      <option key={c} value={c}>{c}</option> 
+                    ))}
+                  </select>
                 </div>
               </div>
 
