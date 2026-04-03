@@ -1,27 +1,35 @@
 'use client';
 
 import { formatDate } from '@/lib/utils';
+import { useState  } from 'react';
 
-interface Place {
+interface Itinerary {
   id: string;
   name: string;
-  type: string;
+  activity: string;
   day: string;
   time: string;
+  latitude: number;
+  longitude: number;
+  notes: string | null;
+  link: string | null;
 }
 
 interface ItineraryPanelProps {
   city: string;
   startDate: string;
   endDate: string;
-  places: Place[];
+  id: string;
+  places: Itinerary[];
   selectedPlace: string | null;
   onSelectPlace: (placeId: string) => void;
   onAddPlace: () => void;
 }
 
-export default function ItineraryPanel({ city, startDate, endDate, places, selectedPlace, onSelectPlace, onAddPlace }: ItineraryPanelProps) {
+export default function ItineraryPanel({ city, startDate, endDate, id, places, selectedPlace, onSelectPlace, onAddPlace }: ItineraryPanelProps) {
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   // we need to group by day
   const groupedByDay = places.reduce((acc, place) => {
     if (!acc[place.day]) {
@@ -29,23 +37,25 @@ export default function ItineraryPanel({ city, startDate, endDate, places, selec
     }
     acc[place.day].push(place);
     return acc;
-  }, {} as Record<string, Place[]>);
+  }, {} as Record<string, Itinerary[]>);
+
+  const formatTime = (time: string) => time.slice(0, 5);
 
   const pinLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
+  console.log('endDate', endDate, 'startDate', startDate);
   return (
     <div className='bg-white rounded-2xl shadow-sm overflow-hidden'>
       {/**header */}
       <div className='flex justify-between items-center px-5 py-4 border-b border-gray-100'>
         <h3 className='font-semibold text-gray-800'>🗺 {city} Itinerary</h3>
-        <div className='flex items-center gap-2'>
+        <div className='flex items-center gap-4'>
           <span className='text-xs text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full'>
             {formatDate(startDate)} – {formatDate(endDate)}
           </span>
           {
             places.length > 0 && (
               <button onClick={onAddPlace}
-                className='flex items-center gap-1 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-full transaction-colors'>
+                className='flex items-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-full transaction-colors'>
                 + Add
               </button>
             )
@@ -72,7 +82,7 @@ export default function ItineraryPanel({ city, startDate, endDate, places, selec
       {Object.entries(groupedByDay).map(([day, dayPlaces]) => (
           <div key={day} className='border-b border-gray-100 last:border-none'>
             <div className='px-5 py-2 bg-gray-50 text-xs font-semibold uppercase tracking-widest text-purple-400'>
-              {day}
+              {formatDate(day)}
             </div>
 
 
@@ -98,12 +108,12 @@ export default function ItineraryPanel({ city, startDate, endDate, places, selec
                   {/**Info place */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-800 truncate">{place.name}</p>
-                    <p className="text-xs text-gray-400">{place.type}</p>
+                    <p className="text-xs text-gray-400">{place.activity}</p>
                   </div>
 
                   {/* time */}
                   <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                    {place.time}
+                    {formatTime(place.time)}
                   </span>
 
                 </div>

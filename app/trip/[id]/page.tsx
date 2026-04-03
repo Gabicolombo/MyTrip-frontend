@@ -27,6 +27,8 @@ const TRIP_DETAILS_QUERY = `
         endDate
         city
         country
+        id
+        tripId
       }
     }
   }
@@ -37,6 +39,7 @@ interface Destination {
   endDate: string;
   city: string;
   country: string;
+  id: string;
 }
 
 interface Participant {

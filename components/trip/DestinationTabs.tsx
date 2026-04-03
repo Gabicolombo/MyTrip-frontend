@@ -1,14 +1,15 @@
 'use client';
 
-import { formatDate } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ItineraryPanel from './ItineraryPanel';
+import AddItinerary from './AddItinerary';
 
 interface Destination {
   city: string;
   country: string;
   startDate: string;
   endDate: string;
+  id: string;
 }
 
 interface DestinationTabsProps {
@@ -25,18 +26,54 @@ interface Place {
   notes?: string;
 }
 
+interface Itinerary {
+  id: string;
+  name: string;
+  activity: string;
+  day: string;
+  time: string;
+  latitude: number;
+  longitude: number;
+  notes: string | null;
+  link: string | null;
+}
+
 export default function DestinationTabs({ destinations, activeTab }: DestinationTabsProps) {
   const [places, setPlaces] = useState<Record<string, Place[]>>({});
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [itinerary, setItinerary] = useState<Itinerary[]>([]);  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   let activeDestination = destinations.find(dest => dest.city === activeTab);
-  if (!activeDestination && destinations.length === 0) {
-    return null;
-  }
   activeDestination ??= destinations[0];
 
   const activePlaces = places[activeTab] ?? [];
+
+  async function fetchItinerary() {
+  try {
+    const res = await fetch(`http://localhost:4000/trips/itinerary/${activeDestination?.id}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      }
+    });
+    const data = await res.json();
+    setItinerary(data);
+  } catch (err: unknown) {
+    setError(err instanceof Error ? err.message : 'Something went wrong');
+  } finally {
+    setLoading(false);
+  }
+}
+
+useEffect(() => {
+  fetchItinerary();
+}, [activeDestination?.id]);
+
+  if (!activeDestination && destinations.length === 0) {
+    return null;
+  }
 
   return (
     <div className='grid grid-cols-2 gap-4'>
@@ -46,11 +83,22 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
         city={activeDestination.city}
         startDate={activeDestination.startDate}
         endDate={activeDestination.endDate}
-        places={activePlaces}
+        id={activeDestination.id}
+        places={itinerary}
         selectedPlace={selectedPlace}
         onSelectPlace={(placeId) => setSelectedPlace(placeId)}
         onAddPlace={() => setDrawerOpen(true)}
       />
+
+      {drawerOpen && (
+        <AddItinerary
+          destinationId={activeDestination.id}
+          startDate={activeDestination.startDate}
+          endDate={activeDestination.endDate}
+          onClose={() => setDrawerOpen(false)}
+          onSuccess={() => { fetchItinerary(); setDrawerOpen(false); }}
+        />
+      )}
 
       {/* <div className='bg-white rounded-2xl shadow-sm overflow-hidden'>
         <div className='flex justify-between items-center px-5 py-4 border-b border-gray-100'>
