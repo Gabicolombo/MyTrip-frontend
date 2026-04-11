@@ -357,6 +357,18 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
               />
             </div>
 
+            {/**link */}
+            <div className='flex flex-col gap-2.5'>
+              <label className='text-xs font-bold text-gray-500 uppercase tracking-wide'>Link</label>
+              <input 
+                type="url" 
+                placeholder='https://...' 
+                value={link} 
+                onChange={(e) => setLink(e.target.value)} 
+                className='w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400'
+              />
+            </div>
+
         </form>
 
         {/**endForm */}
