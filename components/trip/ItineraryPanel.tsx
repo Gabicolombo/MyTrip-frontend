@@ -42,7 +42,7 @@ export default function ItineraryPanel({ city, startDate, endDate, id, places, s
   const formatTime = (time: string) => time.slice(0, 5);
 
   const pinLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  console.log('endDate', endDate, 'startDate', startDate);
+  console.log(groupedByDay);
   return (
     <div className='bg-white rounded-2xl shadow-sm overflow-hidden'>
       {/**header */}
@@ -89,6 +89,7 @@ export default function ItineraryPanel({ city, startDate, endDate, id, places, s
             {dayPlaces.map((place, index) => {
               const letter = pinLetters[places.indexOf(place)];
               const isActive = selectedPlace === place.id;
+              
               return (
                 <div key={place.id} onClick={() => onSelectPlace(place.id)} 
                 className={`flex items-center gap-3 px-5 py-3 cursor-pointer transition-colors border-l-2 ${
