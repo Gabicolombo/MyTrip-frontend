@@ -42,7 +42,6 @@ export default function ItineraryPanel({ city, startDate, endDate, id, places, s
   const formatTime = (time: string) => time.slice(0, 5);
 
   const pinLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  console.log(groupedByDay);
   return (
     <div className='bg-white rounded-2xl shadow-sm overflow-hidden'>
       {/**header */}

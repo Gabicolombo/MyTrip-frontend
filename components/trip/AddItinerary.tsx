@@ -372,7 +372,7 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
         </form>
 
         {/**endForm */}
-        <footer className='flex flex-cols-2 justify-between mt-5 px-6 py-2'>
+        <footer className='flex justify-between justify-between mt-5 px-6 py-2'>
           <button 
             className='flex items-center gap-1 px-5 py-3 text-gray-500 font-semibold rounded-full border cursor-pointer'
             onClick={onClose}
