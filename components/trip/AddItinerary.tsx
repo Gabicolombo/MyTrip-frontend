@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { Itinerary } from './ItineraryPanel';
 
-interface AddItineraryProps {
+interface ItineraryProps {
   destinationId: string;         
   startDate: string;             
   endDate: string;              
   onClose: () => void;
   onSuccess: () => void;
+  itinerary?: Itinerary; // Optional, only needed for editing existing itinerary items
 }
 
 interface NominatimResult {
@@ -19,31 +21,40 @@ interface NominatimResult {
 }
 
 const ACTIVITIES = [
-  { value: 'Sightseeing', emoji: '🏛️' },
-  { value: 'Food',        emoji: '🍽️' },
-  { value: 'Transport',   emoji: '🚆' },
-  { value: 'Nature',      emoji: '🌿' },
-  { value: 'Shopping',    emoji: '🛍️' },
+  { value: 'Museum', emoji: '🏛️' },
+  { value: 'Restaurant',        emoji: '🍽️' },
+  { value: 'Beach',   emoji: '🏖️' },
+  { value: 'Hiking',      emoji: '🌿' },
+  { value: 'Culture',    emoji: '⛩️' },
+  { value: 'Park',    emoji: '🏞️' },
+  { value: 'House',    emoji: '🏖️' },
   { value: 'Tour',        emoji: '🎟️' },
   { value: 'Other',       emoji: '📌' },
 ];
 
-export default function AddItinerary({ destinationId, startDate, endDate, onClose, onSuccess }: AddItineraryProps) {
-  const [name, setName] = useState('');
-  const [activity, setActivity] = useState('');
-  const [day, setDay] = useState('');
-  const [time, setTime] = useState('');
-  const [latitude, setLatitude]   = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
-  const [notes, setNotes] = useState('');
-  const [link, setLink] = useState('');
+export default function AddItinerary({ destinationId, startDate, endDate, onClose, onSuccess, itinerary }: ItineraryProps) {
+  const isEditing = itinerary !== undefined;
+  const h = parseInt(itinerary?.time.slice(0,2) ?? '12');
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  const [name, setName] = useState(itinerary?.name ?? '');
+  const [activity, setActivity] = useState(itinerary?.activity ?? '');
+  const [time, setTime] = useState(itinerary?.time ?? '12:00 PM');
+  const [hour, setHour] = useState(String(h12));
+  const [minute, setMinute] = useState(itinerary?.time?.slice(3, 5) ??'00');
+  const [ampm, setAmpm] = useState(parseInt(itinerary?.time?.slice(0,2) ?? '12') >= 12 ? 'PM' : 'AM');
+  const [latitude, setLatitude]   = useState<number | null>(itinerary?.latitude ?? null);
+  const [longitude, setLongitude] = useState<number | null>(itinerary?.longitude ?? null);
+  const [notes, setNotes] = useState(itinerary?.notes ?? '');
+  const [link, setLink] = useState(itinerary?.link ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
 
   const [suggestions, setSuggestions]   = useState<NominatimResult[]>([]);
   const [searching, setSearching]       = useState(false);
   const [coordsConfirmed, setCoordsConfirmed] = useState(false);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
 
   const justSelected = useRef(false);
   const days = [];
@@ -52,9 +63,14 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
   for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
     days.push(new Date(d).toISOString().split('T')[0]);
   }
-
+  const [day, setDay] = useState(days[0]);
   // Handle place search input changes
   useEffect(() => {
+
+    if(isEditing && name === itinerary?.name) {
+      setCoordsConfirmed(true);
+      return;
+    }
 
     if (justSelected.current) {
       justSelected.current = false;
@@ -97,6 +113,17 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
 
   }, [name]);
 
+  useEffect(() => {
+    setTime(`${hour.padStart(2, '0')}:${minute.padStart(2, '0')} ${ampm}`);
+  }, [hour, minute, ampm]);
+
+  useEffect(() => {
+    document.addEventListener('mousedown', (event) => {
+      if (pickerRef.current && event.target && !pickerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    })
+  }, [])
 
   function handleSelectSuggestion(place: NominatimResult) {
     justSelected.current = true;
@@ -107,15 +134,22 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
     setCoordsConfirmed(true);
   }
 
+  function displayError(message: string) {
+    setError(message);
+    setTimeout(() => {
+      setError(null);
+    }, 4000);
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
     if (!coordsConfirmed || latitude === null || longitude === null) {
-      setError('Please select a place from the suggestions list.');
+      displayError('Please select a place from the suggestions list.');
       return;
     }
     if (!activity) {
-      setError('Please select an activity type.');
+      displayError('Please select an activity type.');
       return;
     }
 
@@ -123,13 +157,7 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
     setError(null);
 
     try {
-      const res = await fetch('http://localhost:4000/trips/add-itinerary', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
+      const body = JSON.stringify({
           tripDestinationId: destinationId,
           name,
           activity,
@@ -139,8 +167,26 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
           longitude,
           notes: notes || null,
           link: link || null,
-        }),
       });
+      let res: Response;
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      };
+      if(isEditing) {
+        res = await fetch(`http://localhost:4000/trips/update-itinerary/${itinerary?.id}`, {
+          method: 'PATCH',
+          headers,
+          body,
+        });
+      }
+      else {
+        res = await fetch('http://localhost:4000/trips/add-itinerary', {
+          method: 'POST',
+          headers,
+          body,
+        });
+      }
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || 'Failed to create trip');
@@ -157,17 +203,17 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
 
   return (
     // overlay 
-    <div className='fixed inset-0 bg-black/30 z-50 flex justify-end'>
+    <div className='fixed inset-0 h-[100dvh] bg-black/30 z-50 flex justify-end'>
       {/**forms on the right side*/}
-      <div className='w-[420px] h-full bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300'>
+      <div className='w-[420px] bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300' style={{ height: '100dvh' }}>
         {/**header */}
         <div className='flex justify-between items-center px-6 py-5 border-b border-gray-100'>
-          <h2 className='text-lg font-semibold text-gray-800'>Add place</h2>
+          <h2 className='text-lg font-semibold text-gray-800'>{isEditing ?'Update' : 'Add'} place</h2>
           <button onClick={onClose} className='text-gray-400 hover:text-gray-600 transition-colors'>X</button>
         </div>
 
         {/**form */}
-        <form onSubmit={handleSubmit} className='flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5'>
+        <form onSubmit={handleSubmit} id="add-itinerary" className='flex-1 min-h-0 overflow-y-auto px-6 py-5 flex flex-col gap-5'>
 
           {error && (
             <p className='rounded-lg border-red-200 bg-red-50 px-3 py-2 text-sm text-red-500'>{error}</p>
@@ -222,8 +268,10 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
                 </div>
               )}
 
-            {/**activity type */}
-            <div className='flex flex-col gap-1.5'>
+          </div>
+
+          {/**activity type */}
+          <div className='flex flex-col gap-1.5'>
               <label className='text-xs font-semibold text-gray-500 uppercase tracking-wide'>Type</label>
 
               <div className='flex flex-wrap gap-2'>
@@ -243,35 +291,123 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
                 ))}
               </div>
 
-            </div>
-
-            {/**day and time */}
-            <div className='grid grid-cols-2 gap-3'>
-                <div className='flex flex-col gap-1.5'>
-                  <label className='text-xs font-semibold text-gray-500 uppercase tracking-wide'>Day</label>
-
-                  <select 
-                    value={day}
-                    onChange={(e) => setDay(e.target.value)}
-                    required
-                    className='rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400'
-                  >
-                    {days.map((d) => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className='flex flex-col gap-1.5'>
-                  <label className='text-xs font-semibold text-gray-500 uppercase tracking-wide'>Time</label>
-                  
-                </div>
-            </div>
-
-
           </div>
 
+          {/**day and time */}
+          <div className='grid grid-cols-2 gap-3'>
+            <div className='flex flex-col gap-1.5'>
+              <label className='text-xs font-semibold text-gray-500 uppercase tracking-wide'>Day</label>
+
+              <select 
+                value={day}
+                onChange={(e) => setDay(e.target.value)}
+                required
+                className='rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400'
+              >
+                {days.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+
+            <div ref={pickerRef} className='flex flex-col gap-1.5 relative'>
+              <label className='text-xs font-semibold text-gray-500 uppercase tracking-wide'>Time</label>
+              <div className='flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 
+                    px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400'>
+                <span>{time}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="lucide lucide-clock2-icon lucide-clock-2 cursor-pointer"
+                      onClick={() => open ? setOpen(false): setOpen(true)}><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4-2"/></svg>
+              </div>
+              {open && (
+                <div className='absolute top-full left-0 right-0 mt-1 grid grid-cols-3 rounded-lg border border-gray-200 bg-gray-50 
+                  px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400'>
+                  
+                  <div className='overflow-y-auto h-44 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden' >
+                    {Array.from({ length: 12}, (_, i) => {
+                      const hourTime = i === 0 ? 12 : i;
+                      return (
+                        <div 
+                          key={hourTime} 
+                          className={`cursor-pointer flex items-center justify-center ${String(hourTime) === hour ? 'bg-purple-400' : 'hover:bg-gray-400'}`}
+                          onClick={() => setHour(String(hourTime))}>
+                          {String(hourTime).padStart(2, '0')}
+                        </div>
+                      )
+                    })}
+        
+                  </div>
+                  <div className='overflow-y-auto h-44 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+                    {Array.from({ length: 60}, (_, i) => {
+                      const min = i
+
+                      return (
+                        <div 
+                          key={min} 
+                          className={`cursor-pointer flex items-center justify-center ${String(min).padStart(2, '0') === minute ? 'bg-purple-400' : 'hover:bg-gray-400'}`}
+                          onClick={() => setMinute(String(min))}
+                        >
+                          {String(min).padStart(2, '0')}
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className='overflow-y-auto h-44 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+                    {['AM', 'PM'].map((m) => (
+                      <div 
+                        key={m} 
+                        className={`cursor-pointer flex items-center justify-center ${m === ampm ? 'bg-purple-400' : 'hover:bg-gray-400'}`}
+                        onClick={() => setAmpm(m)}
+                      >
+                        {m}
+                      </div>
+                    ))}
+                  </div>
+                </div> 
+              )}
+            </div>
+                
+            </div>
+            
+            {/**notes */}
+            <div className='flex flex-col gap-2.5'>
+              <label className='text-xs font-bold text-gray-500 uppercase tracking-wide'>Notes</label>
+              <textarea 
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder='Additional details, tips, or reminders about this place.'
+                className='w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400'
+              />
+            </div>
+
+            {/**link */}
+            <div className='flex flex-col gap-2.5'>
+              <label className='text-xs font-bold text-gray-500 uppercase tracking-wide'>Link</label>
+              <input 
+                type="url" 
+                placeholder='https://...' 
+                value={link} 
+                onChange={(e) => setLink(e.target.value)} 
+                className='w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400'
+              />
+            </div>
+
         </form>
+
+        {/**endForm */}
+        <footer className='flex justify-between justify-between mt-5 px-6 py-2'>
+          <button 
+            className='flex items-center gap-1 px-5 py-3 text-gray-500 font-semibold rounded-full border cursor-pointer'
+            onClick={onClose}
+          >Cancel</button>
+
+          <button 
+            className='flex items-center gap-1 px-5 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-full transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed'
+            type='submit'
+            form='add-itinerary'
+          >
+            {isEditing ? 'Update' : 'Add'} Itinerary
+          </button>
+        </footer>
 
       </div>
 
