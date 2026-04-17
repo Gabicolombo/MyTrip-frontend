@@ -118,7 +118,7 @@ export default function TripDetailsPage() {
 
   const isCompleted = new Date(trip.endDate).getTime() < new Date().getTime();
   const owner = trip.participants.find((p) => p.role === 'OWNER');
-  console.log(trip.destinations)
+
   return (
     <main className="min-h-screen bg-gray-50">
       <TripHeader

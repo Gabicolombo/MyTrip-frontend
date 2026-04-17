@@ -39,7 +39,7 @@ interface Itinerary {
 }
 
 export default function DestinationTabs({ destinations, activeTab }: DestinationTabsProps) {
-  const [places, setPlaces] = useState<Record<string, Place[]>>({});
+  const [editingItinerary, setEditingItinerary] = useState<Itinerary | null>(null);  
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [itinerary, setItinerary] = useState<Itinerary[]>([]);  
@@ -49,27 +49,25 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
   let activeDestination = destinations.find(dest => dest.city === activeTab);
   activeDestination ??= destinations[0];
 
-  const activePlaces = places[activeTab] ?? [];
-
   async function fetchItinerary() {
-  try {
-    const res = await fetch(`http://localhost:4000/trips/itinerary/${activeDestination?.id}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      }
-    });
-    const data = await res.json();
-    setItinerary(data);
-  } catch (err: unknown) {
-    setError(err instanceof Error ? err.message : 'Something went wrong');
-  } finally {
-    setLoading(false);
+    try {
+      const res = await fetch(`http://localhost:4000/trips/itinerary/${activeDestination?.id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        }
+      });
+      const data = await res.json();
+      setItinerary(data);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
   }
-}
 
-useEffect(() => {
-  fetchItinerary();
-}, [activeDestination?.id]);
+  useEffect(() => {
+    fetchItinerary();
+  }, [activeDestination?.id]);
 
   if (!activeDestination && destinations.length === 0) {
     return null;
@@ -88,6 +86,10 @@ useEffect(() => {
         selectedPlace={selectedPlace}
         onSelectPlace={(placeId) => setSelectedPlace(placeId)}
         onAddPlace={() => setDrawerOpen(true)}
+        onEditPlace={(place) => {
+          setEditingItinerary(place);
+          setDrawerOpen(true);
+        }}
       />
 
       {drawerOpen && (
@@ -95,31 +97,14 @@ useEffect(() => {
           destinationId={activeDestination.id}
           startDate={activeDestination.startDate}
           endDate={activeDestination.endDate}
-          onClose={() => setDrawerOpen(false)}
-          onSuccess={() => { fetchItinerary(); setDrawerOpen(false); }}
+          onClose={() => { 
+            setDrawerOpen(false);   
+            setEditingItinerary(null); 
+          }}
+          onSuccess={() => { fetchItinerary(); setDrawerOpen(false); setEditingItinerary(null); }}
+          itinerary={editingItinerary ?? undefined}
         />
       )}
-
-      {/* <div className='bg-white rounded-2xl shadow-sm overflow-hidden'>
-        <div className='flex justify-between items-center px-5 py-4 border-b border-gray-100'>
-          <h3 className='font-semibold text-gray-800'>
-            🗺 {activeDestination.city}, {activeDestination.country} Itinerary
-          </h3>
-          <span className="text-xs text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full">
-            {formatDate(activeDestination.startDate)} – {formatDate(activeDestination.endDate)}
-          </span>
-        </div>
-        <div className="flex flex-col items-center justify-center gap-3 py-16 px-6 text-center">
-          <span className='text-4xl'>🗺️</span>
-          <p className='font-semibold text-gray-600'>No places yet</p>
-          <p className="text-sm text-gray-400 max-w-[200px] leading-relaxed">
-            Add the places you want to visit in {activeDestination.city}
-          </p>
-          <button className='mt-2 flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-full transition-colors'>
-            + Add first place
-          </button>
-        </div>
-      </div> */}
 
       {/**map */}
       <div className='bg-white rounded-2xl shadow-sm overflow-hidden sticky top-6'>

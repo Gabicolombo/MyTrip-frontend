@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { Itinerary } from './ItineraryPanel';
 
-interface AddItineraryProps {
+interface ItineraryProps {
   destinationId: string;         
   startDate: string;             
   endDate: string;              
   onClose: () => void;
   onSuccess: () => void;
+  itinerary?: Itinerary; // Optional, only needed for editing existing itinerary items
 }
 
 interface NominatimResult {
@@ -30,17 +32,20 @@ const ACTIVITIES = [
   { value: 'Other',       emoji: '📌' },
 ];
 
-export default function AddItinerary({ destinationId, startDate, endDate, onClose, onSuccess }: AddItineraryProps) {
-  const [name, setName] = useState('');
-  const [activity, setActivity] = useState('');
-  const [time, setTime] = useState('');
-  const [hour, setHour] = useState('12');
-  const [minute, setMinute] = useState('00');
-  const [ampm, setAmpm] = useState('AM');
-  const [latitude, setLatitude]   = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
-  const [notes, setNotes] = useState('');
-  const [link, setLink] = useState('');
+export default function AddItinerary({ destinationId, startDate, endDate, onClose, onSuccess, itinerary }: ItineraryProps) {
+  const isEditing = itinerary !== undefined;
+  const h = parseInt(itinerary?.time.slice(0,2) ?? '12');
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  const [name, setName] = useState(itinerary?.name ?? '');
+  const [activity, setActivity] = useState(itinerary?.activity ?? '');
+  const [time, setTime] = useState(itinerary?.time ?? '12:00 PM');
+  const [hour, setHour] = useState(String(h12));
+  const [minute, setMinute] = useState(itinerary?.time?.slice(3, 5) ??'00');
+  const [ampm, setAmpm] = useState(parseInt(itinerary?.time?.slice(0,2) ?? '12') >= 12 ? 'PM' : 'AM');
+  const [latitude, setLatitude]   = useState<number | null>(itinerary?.latitude ?? null);
+  const [longitude, setLongitude] = useState<number | null>(itinerary?.longitude ?? null);
+  const [notes, setNotes] = useState(itinerary?.notes ?? '');
+  const [link, setLink] = useState(itinerary?.link ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -61,6 +66,11 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
   const [day, setDay] = useState(days[0]);
   // Handle place search input changes
   useEffect(() => {
+
+    if(isEditing && name === itinerary?.name) {
+      setCoordsConfirmed(true);
+      return;
+    }
 
     if (justSelected.current) {
       justSelected.current = false;
@@ -147,13 +157,7 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
     setError(null);
 
     try {
-      const res = await fetch('http://localhost:4000/trips/add-itinerary', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
+      const body = JSON.stringify({
           tripDestinationId: destinationId,
           name,
           activity,
@@ -163,8 +167,26 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
           longitude,
           notes: notes || null,
           link: link || null,
-        }),
       });
+      let res: Response;
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      };
+      if(isEditing) {
+        res = await fetch(`http://localhost:4000/trips/update-itinerary/${itinerary?.id}`, {
+          method: 'PATCH',
+          headers,
+          body,
+        });
+      }
+      else {
+        res = await fetch('http://localhost:4000/trips/add-itinerary', {
+          method: 'POST',
+          headers,
+          body,
+        });
+      }
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || 'Failed to create trip');
@@ -186,7 +208,7 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
       <div className='w-[420px] bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300' style={{ height: '100dvh' }}>
         {/**header */}
         <div className='flex justify-between items-center px-6 py-5 border-b border-gray-100'>
-          <h2 className='text-lg font-semibold text-gray-800'>Add place</h2>
+          <h2 className='text-lg font-semibold text-gray-800'>{isEditing ?'Update' : 'Add'} place</h2>
           <button onClick={onClose} className='text-gray-400 hover:text-gray-600 transition-colors'>X</button>
         </div>
 
@@ -383,7 +405,7 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
             type='submit'
             form='add-itinerary'
           >
-            Add to Itinerary
+            {isEditing ? 'Update' : 'Add'} Itinerary
           </button>
         </footer>
 

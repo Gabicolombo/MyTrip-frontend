@@ -3,7 +3,7 @@
 import { formatDate } from '@/lib/utils';
 import { useState  } from 'react';
 
-interface Itinerary {
+export interface Itinerary {
   id: string;
   name: string;
   activity: string;
@@ -24,12 +24,10 @@ interface ItineraryPanelProps {
   selectedPlace: string | null;
   onSelectPlace: (placeId: string) => void;
   onAddPlace: () => void;
+  onEditPlace: (place: Itinerary) => void;
 }
 
-export default function ItineraryPanel({ city, startDate, endDate, id, places, selectedPlace, onSelectPlace, onAddPlace }: ItineraryPanelProps) {
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function ItineraryPanel({ city, startDate, endDate, id, places, selectedPlace, onSelectPlace, onAddPlace, onEditPlace }: ItineraryPanelProps) {
   // we need to group by day
   const groupedByDay = places.reduce((acc, place) => {
     if (!acc[place.day]) {
@@ -115,6 +113,13 @@ export default function ItineraryPanel({ city, startDate, endDate, id, places, s
                   <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
                     {formatTime(place.time)}
                   </span>
+
+                  {/**edit button */}
+                  <button 
+                    onClick={() => onEditPlace(place)} 
+                    className="text-gray-400 hover:text-gray-600 transition-colors">
+                    Edit
+                  </button>
 
                 </div>
               )
