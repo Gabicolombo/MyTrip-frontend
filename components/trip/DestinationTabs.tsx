@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import ItineraryPanel from './ItineraryPanel';
 import AddItinerary from './AddItinerary';
+import ConfirmModal from '../common/confirmModal';
 
 interface Destination {
   city: string;
@@ -15,15 +16,6 @@ interface Destination {
 interface DestinationTabsProps {
   destinations: Destination[];
   activeTab: string;
-}
-
-interface Place {
-  id: string;
-  name: string;
-  type: string;
-  day: string;
-  time: string;
-  notes?: string;
 }
 
 interface Itinerary {
@@ -47,6 +39,8 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
   const [editingItinerary, setEditingItinerary] = useState<Itinerary | null>(null);  
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [deletingPlace, setDeletingPlace] = useState<Itinerary | null>(null);
   const [itinerary, setItinerary] = useState<Itinerary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -112,9 +106,26 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
           setDrawerOpen(true);
         }}
         onDeletePlace={(place) => {
-          onDeletePlace(place);
+          setConfirmModalOpen(true,);
+          setDeletingPlace(place);
         }}
       />
+
+      {confirmModalOpen && (
+        <ConfirmModal
+          title="Confirm Deletion"
+          message="Are you sure you want to delete this itinerary item? This action cannot be undone."
+
+          onConfirm={() => {
+            if (deletingPlace) onDeletePlace(deletingPlace);
+            setConfirmModalOpen(false);
+            setDeletingPlace(null);
+          }}
+          onCancel={() => {
+            setConfirmModalOpen(false); 
+          }}
+        />
+      )}
 
       {drawerOpen && (
         <AddItinerary
