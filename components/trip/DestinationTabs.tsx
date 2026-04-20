@@ -38,11 +38,16 @@ interface Itinerary {
   link: string | null;
 }
 
+const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+}
+
 export default function DestinationTabs({ destinations, activeTab }: DestinationTabsProps) {
   const [editingItinerary, setEditingItinerary] = useState<Itinerary | null>(null);  
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [itinerary, setItinerary] = useState<Itinerary[]>([]);  
+  const [itinerary, setItinerary] = useState<Itinerary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,9 +57,7 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
   async function fetchItinerary() {
     try {
       const res = await fetch(`http://localhost:4000/trips/itinerary/${activeDestination?.id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        }
+        headers
       });
       const data = await res.json();
       setItinerary(data);
@@ -62,6 +65,24 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function onDeletePlace(place: Itinerary) {
+    try {
+      const res = await fetch(`http://localhost:4000/trips/delete-itinerary/${place.id}`, {
+        method: 'DELETE',
+        headers
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to delete the itinerary');
+      }
+
+      fetchItinerary();
+      
+    } catch (err: unknown) {
+      throw err instanceof Error ? err.message : 'Something went wrong';
     }
   }
 
@@ -89,6 +110,9 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
         onEditPlace={(place) => {
           setEditingItinerary(place);
           setDrawerOpen(true);
+        }}
+        onDeletePlace={(place) => {
+          onDeletePlace(place);
         }}
       />
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { formatDate } from '@/lib/utils';
-import { useState  } from 'react';
+import { Trash2, SquarePen } from 'lucide-react';
 
 export interface Itinerary {
   id: string;
@@ -25,9 +25,10 @@ interface ItineraryPanelProps {
   onSelectPlace: (placeId: string) => void;
   onAddPlace: () => void;
   onEditPlace: (place: Itinerary) => void;
+  onDeletePlace: (place: Itinerary) => void;
 }
 
-export default function ItineraryPanel({ city, startDate, endDate, id, places, selectedPlace, onSelectPlace, onAddPlace, onEditPlace }: ItineraryPanelProps) {
+export default function ItineraryPanel({ city, startDate, endDate, id, places, selectedPlace, onSelectPlace, onAddPlace, onEditPlace, onDeletePlace }: ItineraryPanelProps) {
   // we need to group by day
   const groupedByDay = places.reduce((acc, place) => {
     if (!acc[place.day]) {
@@ -118,7 +119,12 @@ export default function ItineraryPanel({ city, startDate, endDate, id, places, s
                   <button 
                     onClick={() => onEditPlace(place)} 
                     className="text-gray-400 hover:text-gray-600 transition-colors">
-                    Edit
+                    <SquarePen className='text-gray-400 hover:text-gray-600 transition-colors' size={16} />
+                  </button>
+
+                  {/** delete button */}
+                  <button onClick={() => onDeletePlace(place)}>
+                    <Trash2 className="text-red-400 hover:text-red-600 transition-colors" size={16} />
                   </button>
 
                 </div>
