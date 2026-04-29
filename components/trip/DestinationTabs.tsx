@@ -1,10 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ItineraryPanel from './ItineraryPanel';
 import AddItinerary from './AddItinerary';
 import ConfirmModal from '../common/confirmModal';
+import dynamic from 'next/dynamic';
 
+const MapDisplay = dynamic(() => import('./MapDisplay'), { 
+  ssr: false,
+  loading: () => <div className="h-96 bg-gray-100 animate-pulse flex items-center justify-center">Loading map...</div>
+});
 interface Destination {
   city: string;
   country: string;
@@ -30,11 +35,6 @@ interface Itinerary {
   link: string | null;
 }
 
-const headers = {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-}
-
 export default function DestinationTabs({ destinations, activeTab }: DestinationTabsProps) {
   const [editingItinerary, setEditingItinerary] = useState<Itinerary | null>(null);  
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
@@ -48,10 +48,15 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
   let activeDestination = destinations.find(dest => dest.city === activeTab);
   activeDestination ??= destinations[0];
 
+  const getHeaders = () => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`,
+  });
+
   async function fetchItinerary() {
     try {
       const res = await fetch(`http://localhost:4000/trips/itinerary/${activeDestination?.id}`, {
-        headers
+        headers: getHeaders()
       });
       const data = await res.json();
       setItinerary(data);
@@ -66,7 +71,7 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
     try {
       const res = await fetch(`http://localhost:4000/trips/delete-itinerary/${place.id}`, {
         method: 'DELETE',
-        headers
+        headers: getHeaders()
       });
       if (!res.ok) {
         const errorData = await res.json();
@@ -151,8 +156,12 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
         </div>
         {/*placeholder for map*/}
         <div className='h-96 bg-gradient-to-br from-violet-100 via-purple-100 to-purple-200 flex flex-col items-center justify-center gap-2 text-gray-400'>
-          <span className='text-4xl opacity-40'>📍</span>
-          <span className='text-sm'>Map coming soon</span>
+          {/* <span className='text-4xl opacity-40'>📍</span>
+          <span className='text-sm'>Map coming soon</span> */}
+          <MapDisplay 
+            places={itinerary} 
+            selectedPlaceId={selectedPlace} 
+          />
         </div>
       </div>
     </div>

@@ -90,7 +90,7 @@ export default function ItineraryPanel({ city, startDate, endDate, id, places, s
               
               return (
                 <div key={place.id} onClick={() => onSelectPlace(place.id)} 
-                className={`flex items-center gap-3 px-5 py-3 cursor-pointer transition-colors border-l-2 ${
+                className={`itinerary-plan flex items-center gap-3 px-5 py-3 cursor-pointer transition-colors border-l-2 ${
                   isActive
                     ? 'bg-purple-50 border-l-purple-600'
                     : 'border-l-transparent hover:bg-purple-50'
