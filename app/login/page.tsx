@@ -32,6 +32,7 @@ export default function LoginPage() {
       const data = await res.json();
 
       localStorage.setItem('token', data.access_token);
+      localStorage.setItem('name', data.name);
       router.push('/home');
     } catch (error: unknown) {
       if (error instanceof Error) {
