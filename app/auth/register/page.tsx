@@ -32,7 +32,7 @@ export default function RegisterPage() {
         throw new Error(errorData.message || 'Login failed');
       }
 
-      router.push('/login');
+      router.push('/auth/login');
 
     }catch (error: unknown) {
       if (error instanceof Error) {
