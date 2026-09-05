@@ -6,6 +6,9 @@ import RegisterTripModal from '@/components/trip/RegisterTripModal';
 import AddDestinationsModal from '@/components/trip/AddDestinationModal';
 import { Trash2 } from 'lucide-react';
 import ConfirmModal from '@/components/common/confirmModal';
+import { format, differenceInDays, parseISO } from 'date-fns';
+import Navbar from '@/components/common/navbar';
+
 interface Destination {
   id: string;
   city: string;
@@ -35,12 +38,16 @@ export default function HomePage() {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [deletingTrip, setDeletingTrip] = useState<Trip | null>(null);
   const [destinationsTripId, setDestinationsTripId] = useState<string | null>(null);
-  const name = localStorage.getItem('name') || 'Traveler';
+  const [name, setName] = useState<string>('Traveler');
+ 
+  useEffect(() => {
+    const name = localStorage.getItem('name');
+    if (name) setName(name);
+  }, []);
 
   async function deleteTrip(tripId: string) {
 
     try {
-      console.log('Attempting to delete trip with ID:', tripId);
       const response = await fetch(`http://localhost:4000/trips/delete-trip/${tripId}`, {
         method: 'DELETE',
         headers: {
@@ -68,7 +75,6 @@ export default function HomePage() {
       if (!response.ok) throw new Error('Failed to fetch trips');
 
       const data = await response.json();
-      console.log(data);
       setTrips(data);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -83,17 +89,8 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-gray-50 p-8">
+      <Navbar onNewTripClick={() => setIsModalOpen(true)} />
       <div className="max-w-6xl mx-auto">
-
-        {/* Header */}
-        <div className="flex justify-between items-center mb-10">
-          <h1 className="text-3xl text-purple-600 font-bold">Welcome back {name} 👋</h1>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-5 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700">
-            + New Trip
-          </button>
-        </div>
 
         {isModalOpen && (
           <RegisterTripModal
@@ -119,7 +116,7 @@ export default function HomePage() {
               return (
                 <div
                   key={trip.id}
-                  className={`p-6 rounded-2xl shadow-sm hover:shadow-lg transition cursor-pointer ${
+                  className={`p-6 rounded-2xl shadow-sm hover:shadow-lg transition ${
                     isCompleted
                       ? 'bg-red-50 border border-red-200 pointer-events-none'
                       : 'bg-green-50 border border-green-200'
@@ -128,7 +125,7 @@ export default function HomePage() {
                   <button className='ml-auto block mb-2' onClick={() => { setConfirmModalOpen(true); setDeletingTrip(trip); }}>
                     <Trash2 className="text-red-400 hover:text-red-600 transition-colors" size={16} />
                   </button>
-                  <img src={trip.imageUrl} alt={trip.title} />
+                  <img src={trip.imageUrl} alt={trip.title} className='w-full h-44 object-cover rounded-xl'/>
 
                   {deletingTrip === trip && (
                     <ConfirmModal
@@ -142,17 +139,18 @@ export default function HomePage() {
                       }}
                       onCancel={() => {
                         setConfirmModalOpen(false); 
+                        setDeletingTrip(null);
                       }}
                     />
                   )}
 
-                  <h2 className="text-xl font-semibold m-2 text-purple-600 text-center">
+                  <h2 className="text-xl font-semibold m-2 mt-4 text-purple-600 text-center">
                     {trip.title}
                   </h2>
 
                   {hasDestinations ? (
                     <p className="text-sm text-gray-500 mt-2 text-center">
-                      {trip.destinations.map((destination, index) => (
+                      📍{trip.destinations.map((destination, index) => (
                         <span key={destination.id}>
                           {destination.city}
                           {index < trip.destinations.length - 1 && ' • '}
@@ -172,22 +170,35 @@ export default function HomePage() {
                     </div>
                   )}
 
+
                   <p className="text-gray-500 mb-4 py-4 text-center">
-                    {trip.startDate} – {trip.endDate}
+                    📅{format(parseISO (trip.startDate), "dd MMM")} →{" "} {format(parseISO(trip.endDate), "dd MMM")}
                   </p>
 
-                  <p className="text-center">
+                  <div className="flex items-center justify-center gap-3 mb-5">
+                    <span className="px-2 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-medium">
+                      {differenceInDays(new Date(trip.endDate), new Date(trip.startDate))} days
+                    </span>
                     {isCompleted ? (
                       <span className="text-red-500 font-semibold">Completed</span>
                     ) : (
                       <span className="text-green-600 font-semibold">Upcoming</span>
                     )}
-                  </p>
-                  <button 
-                    onClick={() => router.push(`/trip/${trip.id}`)}
-                    className='px-4 py-2 mt-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 block mx-auto'>
-                    Details
-                  </button>
+                  </div>
+
+                  <div className="flex items-center justify-center gap-2 mt-1">
+                    <button 
+                      onClick={() => router.push(`/trip/${trip.id}`)}
+                      className='flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 block mx-auto'>
+                      Details
+                    </button>
+                    {!isCompleted && (
+                      <button 
+                        className='flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 block mx-auto'>
+                      Edit trip
+                    </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -205,7 +216,7 @@ export default function HomePage() {
             </button>
           </div>
         )}
-
+        
       </div>
     </main>
   );

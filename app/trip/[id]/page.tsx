@@ -142,7 +142,7 @@ export default function TripDetailsPage() {
             checkOut={trip.endDate}
             status={isCompleted ? 'Completed' : 'Upcoming'}
           />
-          {/* Participants, VisaCheck later */}
+          {/* Participants later */}
 
           <VisaCheck
             destinations={trip.destinations.map(d => d.country)}

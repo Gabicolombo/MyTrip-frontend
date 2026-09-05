@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import countriesData from 'world-countries'
 
 interface Destination {
   city: string;
@@ -12,7 +13,7 @@ interface Destination {
 interface AddDestinationsModalProps {
   tripId: string;
   onClose: () => void;
-  onSuccess: () => void; // atualiza a lista na home
+  onSuccess: () => void;
 }
 
 export default function AddDestinationsModal({ tripId, onClose, onSuccess }: AddDestinationsModalProps) {
@@ -27,12 +28,10 @@ export default function AddDestinationsModal({ tripId, onClose, onSuccess }: Add
   useEffect(() => {
       async function fetchCountries() {
         try {
-          const res  = await fetch('https://restcountries.com/v3.1/all?fields=name');
-          const data = await res.json();
-          const names = data
-            .map((c: any) => c.name.common)
+          const countryNames = countriesData
+            .map((c) => c.name.common)
             .sort();
-          setCountries(names);
+          setCountries(countryNames);
         } catch (err) {
           console.error('Failed to fetch countries', err);
         } finally {
