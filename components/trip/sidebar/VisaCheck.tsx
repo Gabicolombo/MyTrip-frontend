@@ -1,10 +1,6 @@
-'use strict';
+'use client';
 
 import { useEffect, useState } from 'react';
-
-interface VisaResult {
-  requirement: string;
-}
 
 interface VisaCheckProps {
   destinations: string[];
@@ -26,6 +22,10 @@ function getVisaBadge(requirement: string) {
 
   return { label: requirement, cls: 'bg-gray-100 text-gray-400' };
 }
+console.log(
+  'API key existe?',
+  Boolean(process.env.NEXT_PUBLIC_REST_COUNTRIES_API_KEY)
+);
 
 export default function VisaCheck({ destinations }: VisaCheckProps) {
   const [countries, setCountries]     = useState<string[]>([]);
@@ -33,16 +33,29 @@ export default function VisaCheck({ destinations }: VisaCheckProps) {
   const [passport, setPassport]       = useState('');
   const [results, setResults]         = useState<Record<string, string> | null>(null);
   const [loading, setLoading]         = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [isOpen, setIsOpen] = useState(false);
 
+  const limit = 25;
   useEffect(() => {
     async function fetchCountries() {
       try {
-        const res  = await fetch('https://restcountries.com/v3.1/all?fields=name');
-        const data = await res.json();
-        const names = data
-          .map((c: any) => c.name.common)
+        const res  = await fetch(`https://api.restcountries.com/countries/v5?fields=name&limit=${limit}&offset=${offset}`, {
+          headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_REST_COUNTRIES_API_KEY}`}
+        });
+        const responseBody  = await res.json();
+        if (!res.ok) {
+          console.error('Error: ', responseBody );
+          throw new Error('Internal error');
+        }
+        
+        const names = responseBody.data.objects
+          .map((c: any) => c.names.common)
           .sort();
-        setCountries(names);
+        setCountries(currentCountries => [
+        ...currentCountries,
+        ...names,
+      ]);
       } catch (err) {
         console.error('Failed to fetch countries', err);
       } finally {
@@ -50,7 +63,20 @@ export default function VisaCheck({ destinations }: VisaCheckProps) {
       }
     }
     fetchCountries();
-  }, []);
+  }, [offset]);
+
+  const handleScroll = (event: React.UIEvent<HTMLUListElement>) => {
+    const list = event.currentTarget;
+
+    const reachedBottom =
+    list.scrollTop + list.clientHeight >= list.scrollHeight - 10;
+
+    console.log({ reachedBottom });
+
+    if (reachedBottom && !loadingCountries) {
+      setOffset(currentOffset => currentOffset + 25);
+    }
+  };
 
   async function handleCheck() {
     if (!passport || !destinations) {
@@ -72,6 +98,7 @@ export default function VisaCheck({ destinations }: VisaCheckProps) {
             body: JSON.stringify({ passport, destination }),
           });
           const data = await res.json();
+          console.log(data)
           return { destination, requirement: data.requirement };
         })
       );
@@ -90,7 +117,7 @@ export default function VisaCheck({ destinations }: VisaCheckProps) {
   const selectClass = "w-full text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition disabled:opacity-50";
 
   return (
-    <div className='bg-white rounded-2xl shadow-sm overflow-hidden'>
+    <div className='relative z-20 bg-white rounded-2xl shadow-sm overflow-visible'>
       <div className="px-5 py-4 border-b border-gray-100">
         <h3 className="font-semibold text-gray-800">🛂 Visa Check</h3>
       </div>
@@ -109,23 +136,50 @@ export default function VisaCheck({ destinations }: VisaCheckProps) {
           </div>
         </div>
 
-        <div>
+        <div className='relative'>
           <p className='text-xs font-semibold uppercase tracking-widest text-purple-400'>
             Your passport
           </p>
-          <select 
-            value={passport} 
-            onChange={e => {setPassport(e.target.value); setResults(null)}}
-            disabled={loadingCountries}
-            className={selectClass}  
+          <button
+            type='button'
+            onClick={() => setIsOpen(!isOpen)}
+            className={selectClass}
           >
-            <option value="">
-              {loadingCountries ? 'Loading countries...' : 'Select your country...'}
-            </option>
-            {countries.map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+            {passport || 'Select your country'}
+          </button>
+
+
+          {isOpen && (
+            <ul className="
+              absolute z-50
+              bottom-full left-0 mb-1
+              w-full max-h-100 overflow-y-auto
+              bg-white border border-gray-200
+              rounded-xl shadow-lg
+              py-1"
+              onScroll={handleScroll}>
+              {countries.map((country) => (
+                <li key={country}>
+                  <button
+                    type='button'
+                    onClick={() => {
+                      setPassport(country)
+                      setIsOpen(false);
+                    }}
+                    className="
+                      w-full px-3 py-2
+                      text-left text-sm text-gray-700
+                      hover:bg-purple-50 hover:text-purple-700
+                      transition-colors
+                    "
+                  >
+                    {country}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
         </div>
 
         <button
