@@ -47,6 +47,9 @@ export default function Navbar({ onNewTripClick }: NavbarProps) {
 
             <div ref={menuRef} className="relative">
               <button
+                aria-label="Open user menu"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
                 onClick={() => setMenuOpen((prev) => !prev)}
                 className="w-8 h-8 rounded-full bg-white/20 border border-white/40 flex items-center justify-center text-white text-xs font-medium"
               >

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import countriesData from 'world-countries'
+import countriesData from 'world-countries';
 
 interface Destination {
   city: string;
