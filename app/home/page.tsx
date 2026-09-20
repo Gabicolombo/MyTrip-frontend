@@ -38,12 +38,6 @@ export default function HomePage() {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [deletingTrip, setDeletingTrip] = useState<Trip | null>(null);
   const [destinationsTripId, setDestinationsTripId] = useState<string | null>(null);
-  const [name, setName] = useState<string>('Traveler');
- 
-  useEffect(() => {
-    const name = localStorage.getItem('name');
-    if (name) setName(name);
-  }, []);
 
   async function deleteTrip(tripId: string) {
 
@@ -127,7 +121,7 @@ export default function HomePage() {
                   </button>
                   <img src={trip.imageUrl} alt={trip.title} className='w-full h-44 object-cover rounded-xl'/>
 
-                  {deletingTrip === trip && (
+                  {confirmModalOpen && deletingTrip?.id === trip.id && (
                     <ConfirmModal
                       title="Confirm Deletion"
                       message="Are you sure you want to delete this trip? This action cannot be undone."
@@ -172,12 +166,12 @@ export default function HomePage() {
 
 
                   <p className="text-gray-500 mb-4 py-4 text-center">
-                    📅{format(parseISO (trip.startDate), "dd MMM")} →{" "} {format(parseISO(trip.endDate), "dd MMM")}
+                      📅{format(parseISO(trip.startDate), 'dd MMM')} → {format(parseISO(trip.endDate), 'dd MMM')}
                   </p>
 
                   <div className="flex items-center justify-center gap-3 mb-5">
                     <span className="px-2 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-medium">
-                      {differenceInDays(new Date(trip.endDate), new Date(trip.startDate))} days
+                      {differenceInDays(parseISO(trip.endDate), parseISO(trip.startDate))} days
                     </span>
                     {isCompleted ? (
                       <span className="text-red-500 font-semibold">Completed</span>

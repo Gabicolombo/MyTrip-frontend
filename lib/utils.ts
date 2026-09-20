@@ -3,7 +3,7 @@ export function formatDate(dateStr: string) {
   const [datePart] = dateStr.split('T');
   const [year, month, day] = datePart.split('-');
 
-  const date = new Date(year, month - 1, day);
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
 
   return date.toLocaleDateString('en-GB', {
     day: '2-digit',
