@@ -50,7 +50,7 @@ export default function VisaCheck({ destinations }: VisaCheckProps) {
         }
         
         const names = responseBody.data.objects
-          .map((c: any) => c.names.common)
+          .map((c: { names: { common: string } }) => c.names.common)
           .sort();
         setCountries(currentCountries => [
         ...currentCountries,
@@ -117,7 +117,7 @@ export default function VisaCheck({ destinations }: VisaCheckProps) {
   const selectClass = "w-full text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition disabled:opacity-50";
 
   return (
-    <div className='relative z-20 bg-white rounded-2xl shadow-sm overflow-visible'>
+    <div className='relative z-20 min-w-0 break-words bg-white rounded-2xl shadow-sm overflow-visible'>
       <div className="px-5 py-4 border-b border-gray-100">
         <h3 className="font-semibold text-gray-800">🛂 Visa Check</h3>
       </div>
@@ -195,7 +195,7 @@ export default function VisaCheck({ destinations }: VisaCheckProps) {
             {destinations.map(dest => {
               const badge = getVisaBadge(results[dest] ?? '-1');
               return (
-                <div key={dest} className="flex items-center justify-between">
+                <div key={dest} className="flex flex-wrap gap-2 items-center justify-between">
                   <span className="text-sm text-gray-700">{dest}</span>
                   <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${badge.cls}`}>
                     {badge.label}

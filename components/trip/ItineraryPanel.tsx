@@ -42,11 +42,11 @@ export default function ItineraryPanel({ city, startDate, endDate, id, places, s
 
   const pinLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   return (
-    <div className='bg-white rounded-2xl shadow-sm overflow-hidden'>
+    <div className='min-w-0 bg-white rounded-2xl shadow-sm overflow-hidden'>
       {/**header */}
-      <div className='flex justify-between items-center px-5 py-4 border-b border-gray-100'>
-        <h3 className='font-semibold text-gray-800'>🗺 {city} Itinerary</h3>
-        <div className='flex items-center gap-4'>
+      <div className='flex flex-wrap justify-between items-center gap-3 px-4 sm:px-5 py-4 border-b border-gray-100'>
+        <h3 className='min-w-0 break-words font-semibold text-gray-800'>🗺 {city} Itinerary</h3>
+        <div className='flex flex-wrap items-center gap-2'>
           <span className='text-xs text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full'>
             {formatDate(startDate)} – {formatDate(endDate)}
           </span>
@@ -90,7 +90,7 @@ export default function ItineraryPanel({ city, startDate, endDate, id, places, s
               
               return (
                 <div key={place.id} onClick={() => onSelectPlace(place.id)} 
-                className={`itinerary-plan flex items-center gap-3 px-5 py-3 cursor-pointer transition-colors border-l-2 ${
+                className={`itinerary-plan flex flex-wrap items-center gap-2 px-3 sm:px-5 py-3 cursor-pointer transition-colors border-l-2 ${
                   isActive
                     ? 'bg-purple-50 border-l-purple-600'
                     : 'border-l-transparent hover:bg-purple-50'
@@ -105,9 +105,9 @@ export default function ItineraryPanel({ city, startDate, endDate, id, places, s
                   </div>
 
                   {/**Info place */}
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-24">
                     <p className="text-sm font-medium text-gray-800 truncate">{place.name}</p>
-                    <p className="text-xs text-gray-400">{place.activity}</p>
+                    <p className="break-words text-xs text-gray-400">{place.activity}</p>
                   </div>
 
                   {/* time */}
@@ -117,13 +117,14 @@ export default function ItineraryPanel({ city, startDate, endDate, id, places, s
 
                   {/**edit button */}
                   <button 
-                    onClick={() => onEditPlace(place)} 
-                    className="text-gray-400 hover:text-gray-600 transition-colors">
+                    aria-label={`Edit ${place.name}`}
+                    onClick={(event) => { event.stopPropagation(); onEditPlace(place); }}
+                    className="min-h-11 min-w-11 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
                     <SquarePen className='text-gray-400 hover:text-gray-600 transition-colors' size={16} />
                   </button>
 
                   {/** delete button */}
-                  <button onClick={() => onDeletePlace(place)}>
+                  <button aria-label={`Delete ${place.name}`} className="min-h-11 min-w-11 flex items-center justify-center" onClick={(event) => { event.stopPropagation(); onDeletePlace(place); }}>
                     <Trash2 className="text-red-400 hover:text-red-600 transition-colors" size={16} />
                   </button>
 

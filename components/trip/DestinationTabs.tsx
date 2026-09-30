@@ -94,7 +94,7 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
   }
 
   return (
-    <div className='grid grid-cols-2 gap-4'>
+    <div className='grid min-w-0 grid-cols-1 md:grid-cols-2 gap-4 items-start'>
       {/**itinerary */}
 
       <ItineraryPanel
@@ -147,15 +147,15 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
       )}
 
       {/**map */}
-      <div className='bg-white rounded-2xl shadow-sm overflow-hidden sticky top-6'>
+      <div className='relative z-0 min-w-0 bg-white rounded-2xl shadow-sm overflow-hidden md:sticky md:top-6'>
         <div className="flex items-center gap-2 px-5 py-4 border-b border-gray-100">
           <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_0_3px_#D1FAE5]" />
-          <span className="text-sm font-semibold text-gray-700">
+          <span className="min-w-0 break-words text-sm font-semibold text-gray-700">
             {activeDestination.city}, {activeDestination.country}
           </span>
         </div>
         {/*placeholder for map*/}
-        <div className='h-96 bg-gradient-to-br from-violet-100 via-purple-100 to-purple-200 flex flex-col items-center justify-center gap-2 text-gray-400'>
+        <div className='h-72 sm:h-96 bg-gradient-to-br from-violet-100 via-purple-100 to-purple-200 flex flex-col items-center justify-center gap-2 text-gray-400'>
           {/* <span className='text-4xl opacity-40'>📍</span>
           <span className='text-sm'>Map coming soon</span> */}
           <MapDisplay 

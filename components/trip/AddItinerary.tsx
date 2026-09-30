@@ -205,15 +205,15 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
     // overlay 
     <div className='fixed inset-0 h-[100dvh] bg-black/30 z-50 flex justify-end'>
       {/**forms on the right side*/}
-      <div className='w-[420px] bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300' style={{ height: '100dvh' }}>
+      <div className='w-full max-w-[420px] bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300' style={{ height: '100dvh' }}>
         {/**header */}
-        <div className='flex justify-between items-center px-6 py-5 border-b border-gray-100'>
+        <div className='flex shrink-0 justify-between items-center px-4 sm:px-6 py-4 border-b border-gray-100'>
           <h2 className='text-lg font-semibold text-gray-800'>{isEditing ?'Update' : 'Add'} place</h2>
-          <button onClick={onClose} className='text-gray-400 hover:text-gray-600 transition-colors'>X</button>
+          <button aria-label='Close itinerary form' onClick={onClose} className='min-h-11 min-w-11 text-gray-400 hover:text-gray-600 transition-colors'>X</button>
         </div>
 
         {/**form */}
-        <form onSubmit={handleSubmit} id="add-itinerary" className='flex-1 min-h-0 overflow-y-auto px-6 py-5 flex flex-col gap-5'>
+        <form onSubmit={handleSubmit} id="add-itinerary" className='flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 py-5 flex flex-col gap-5'>
 
           {error && (
             <p className='rounded-lg border-red-200 bg-red-50 px-3 py-2 text-sm text-red-500'>{error}</p>
@@ -294,7 +294,7 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
           </div>
 
           {/**day and time */}
-          <div className='grid grid-cols-2 gap-3'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
             <div className='flex flex-col gap-1.5'>
               <label className='text-xs font-semibold text-gray-500 uppercase tracking-wide'>Day</label>
 
@@ -394,7 +394,7 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
         </form>
 
         {/**endForm */}
-        <footer className='flex justify-between justify-between mt-5 px-6 py-2'>
+        <footer className='flex shrink-0 flex-wrap justify-between gap-2 border-t border-gray-100 px-4 sm:px-6 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]'>
           <button 
             className='flex items-center gap-1 px-5 py-3 text-gray-500 font-semibold rounded-full border cursor-pointer'
             onClick={onClose}

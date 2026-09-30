@@ -35,7 +35,15 @@ function MapUpdater({ places, selectedPlaceId }: { places: Itinerary[]; selected
     }
     const bounds = places.map((p: Itinerary) => [p.latitude, p.longitude] as [number, number]);
     map.fitBounds(bounds, { padding: [40, 40], animate: true });
-  }, [places, selectedPlaceId]);
+  }, [map, places, selectedPlaceId]);
+
+  useEffect(() => {
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize({ pan: false });
+    });
+    observer.observe(map.getContainer());
+    return () => observer.disconnect();
+  }, [map]);
 
   return null;
 }

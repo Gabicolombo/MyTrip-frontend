@@ -95,8 +95,8 @@ export default function AddDestinationsModal({ tripId, onClose, onSuccess }: Add
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl border p-6 w-110 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl border p-4 sm:p-6 w-full max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain break-words">
         <label className="uppercase text-gray-400 font-semibold text-sm">Add destinations 📍</label>
         <h2 className="text-2xl font-bold text-gray-500 mb-1">Where are your stops?</h2>
 
@@ -121,7 +121,7 @@ export default function AddDestinationsModal({ tripId, onClose, onSuccess }: Add
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-gray-500 uppercase">City</label>
                   <input
@@ -152,7 +152,7 @@ export default function AddDestinationsModal({ tripId, onClose, onSuccess }: Add
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-gray-500 uppercase">Start Date</label>
                   <input
@@ -185,7 +185,7 @@ export default function AddDestinationsModal({ tripId, onClose, onSuccess }: Add
           </button>
         </div>
 
-        <div className="flex justify-between items-center pt-4 mt-2 border-t border-gray-100">
+        <div className="flex flex-wrap justify-between items-center gap-3 pt-4 mt-2 border-t border-gray-100">
           <button
             type="button"
             onClick={onClose}

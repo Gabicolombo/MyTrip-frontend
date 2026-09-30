@@ -8,8 +8,8 @@ interface ConfirmModalProps {
 
 export default function ConfirmModal({ title, message, onConfirm, onCancel }: ConfirmModalProps) {
   return (
-    <div className="bg-black/30 z-50 fixed inset-0 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm">
+    <div className="bg-black/30 z-50 fixed inset-0 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm max-h-[calc(100dvh-2rem)] overflow-y-auto break-words">
         <h2 className="text-xl font-semibold mb-4 text-gray-600">{title}</h2>
 
         <p className="text-gray-600 mb-6">{message}</p>

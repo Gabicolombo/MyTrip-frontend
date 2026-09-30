@@ -47,16 +47,16 @@ export default function RegisterPage() {
 
   return (
     <div className="
-        min-h-screen 
+        min-h-dvh
         flex 
         items-center 
         justify-center
-        px-4
+        px-4 py-6 sm:py-10
         bg-no-repeat
         bg-cover
         bg-center
         relative" style={{backgroundImage: "url('/mytripv3.jpg')"}}>
-       <form onSubmit={handleSubmit} className='bg-white p-10 rounded-2xl shadow-lg font-bold text-center text-purple-700 w-full max-w-lg'> 
+       <form onSubmit={handleSubmit} className='bg-white p-5 sm:p-10 rounded-2xl shadow-lg font-bold text-center text-purple-700 w-full max-w-lg'>
         <h1 className='text-3xl font-bold mb-8 text-center text-purple-700'>MyTrip</h1>
 
         {error && <p className='text-red-500 mb-4'>{error}</p>}
