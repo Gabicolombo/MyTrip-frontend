@@ -82,7 +82,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8">
+    <main className="min-h-dvh bg-gray-50 p-4 sm:p-6 lg:p-8">
       <Navbar onNewTripClick={() => setIsModalOpen(true)} />
       <div className="max-w-6xl mx-auto">
 
@@ -110,13 +110,13 @@ export default function HomePage() {
               return (
                 <div
                   key={trip.id}
-                  className={`p-6 rounded-2xl shadow-sm hover:shadow-lg transition ${
+                  className={`min-w-0 break-words p-4 sm:p-6 rounded-2xl shadow-sm hover:shadow-lg transition ${
                     isCompleted
                       ? 'bg-red-50 border border-red-200 pointer-events-none'
                       : 'bg-green-50 border border-green-200'
                   }`}
                 >
-                  <button className='ml-auto block mb-2' onClick={() => { setConfirmModalOpen(true); setDeletingTrip(trip); }}>
+                  <button aria-label={`Delete ${trip.title}`} className='ml-auto flex min-h-11 min-w-11 items-center justify-center mb-2' onClick={() => { setConfirmModalOpen(true); setDeletingTrip(trip); }}>
                     <Trash2 className="text-red-400 hover:text-red-600 transition-colors" size={16} />
                   </button>
                   <img src={trip.imageUrl} alt={trip.title} className='w-full h-44 object-cover rounded-xl'/>
@@ -169,7 +169,7 @@ export default function HomePage() {
                       📅{format(parseISO(trip.startDate), 'dd MMM')} → {format(parseISO(trip.endDate), 'dd MMM')}
                   </p>
 
-                  <div className="flex items-center justify-center gap-3 mb-5">
+                  <div className="flex flex-wrap items-center justify-center gap-3 mb-5">
                     <span className="px-2 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-medium">
                       {differenceInDays(parseISO(trip.endDate), parseISO(trip.startDate))} days
                     </span>
@@ -198,7 +198,7 @@ export default function HomePage() {
             })}
           </div>
         ) : (
-          <div className="bg-white p-10 rounded-2xl text-center shadow-sm">
+          <div className="bg-white p-6 sm:p-10 rounded-2xl text-center shadow-sm">
             <h2 className="text-xl font-semibold mb-4">
               Ready to plan your next adventure? ✈️
             </h2>

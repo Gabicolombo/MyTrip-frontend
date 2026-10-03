@@ -127,7 +127,7 @@ export default function TripDetailsPage() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />
-      <div className="max-w-6xl mx-auto px-6 py-6 grid grid-cols-[1fr_300px] gap-6 items-start">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px] gap-6 items-start">
       
         {/*itinerary later*/}
         <DestinationTabs
@@ -136,7 +136,7 @@ export default function TripDetailsPage() {
         />
         {/*sidebar*/}
 
-        <div className="flex flex-col gap-4">
+        <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-1">
           <TripInfo
             checkIn={trip.startDate}
             checkOut={trip.endDate}

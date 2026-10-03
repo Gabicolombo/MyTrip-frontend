@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { MapPin, Plus, LogOut, User } from 'lucide-react';
 
@@ -8,16 +8,16 @@ interface NavbarProps {
   onNewTripClick?: () => void;
 }
 
+function subscribeToUser(callback: () => void) {
+  window.addEventListener('storage', callback);
+  return () => window.removeEventListener('storage', callback);
+}
+
 export default function Navbar({ onNewTripClick }: NavbarProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [name, setName] = useState('');
+  const name = useSyncExternalStore(subscribeToUser, () => localStorage.getItem('name') || '', () => '');
   const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const userName = localStorage.getItem('name') || '';
-    setName(userName);
-  }, []);
 
   function handleLogout() {
     localStorage.removeItem('token');
@@ -26,9 +26,9 @@ export default function Navbar({ onNewTripClick }: NavbarProps) {
   }
 
   return (
-    <nav className="px-4 pb-2 pt-2 pb-0">
+    <nav className="pb-6">
       <div className="max-w-6xl mx-auto">
-        <div className="bg-purple-700 rounded-2xl px-5 h-14 flex items-center justify-between">
+        <div className="bg-purple-700 rounded-2xl px-3 sm:px-5 min-h-16 flex items-center justify-between">
           <button onClick={() => router.push('/home')} className="flex items-center gap-2">
             <span className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center">
               <MapPin size={15} className="text-white" />
@@ -38,8 +38,9 @@ export default function Navbar({ onNewTripClick }: NavbarProps) {
 
           <div className="flex items-center gap-2.5">
             <button
+              aria-label="Create new trip"
               onClick={onNewTripClick}
-              className="flex items-center gap-1.5 bg-white text-purple-700 font-medium text-sm px-4 py-1.5 rounded-full hover:bg-purple-50 transition-colors"
+              className="flex min-h-11 min-w-11 justify-center items-center gap-1.5 bg-white text-purple-700 font-medium text-sm px-4 py-1.5 rounded-full hover:bg-purple-50 transition-colors"
             >
               <Plus size={14} />
               <span className="hidden sm:inline">New trip</span>
@@ -51,7 +52,7 @@ export default function Navbar({ onNewTripClick }: NavbarProps) {
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
                 onClick={() => setMenuOpen((prev) => !prev)}
-                className="w-8 h-8 rounded-full bg-white/20 border border-white/40 flex items-center justify-center text-white text-xs font-medium"
+                className="w-11 h-11 rounded-full bg-white/20 border border-white/40 flex items-center justify-center text-white text-xs font-medium"
               >
                 {name.charAt(0).toUpperCase() || 'U'}
               </button>
