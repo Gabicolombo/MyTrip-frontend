@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import Navbar from '@/components/common/navbar';
+import EditTripModal from '@/components/trip/EditTripModal';
 import TripHeader from '@/components/trip/TripHeader';
 import TripInfo from '@/components/trip/sidebar/TripInfo';
 import DestinationTabs from '@/components/trip/DestinationTabs';
@@ -61,7 +63,8 @@ interface TripDetails {
 export default function TripDetailsPage() {
 
   const { id } = useParams();
-  const router = useRouter();
+  const [editingTrip, setEditingTrip] = useState(false);
+  const [refreshVersion, setRefreshVersion] = useState(0);
   const [activeTab, setActiveTab] = useState('');
   const [trip, setTrip] = useState<TripDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,36 +101,46 @@ export default function TripDetailsPage() {
       }
     }
     if (id) fetchTripDetails();
-  },[id]);
+  },[id, refreshVersion]);
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-400 text-lg">Loading trip details...</p>
+      <main className="min-h-dvh bg-gray-50">
+        <Navbar />
+        <p className="p-8 text-center text-gray-400 text-lg">Loading trip details...</p>
       </main>
     );
   }
 
   if (error || !trip) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-red-500">{error ?? 'Trip not found.'}</p>
+      <main className="min-h-dvh bg-gray-50">
+        <Navbar />
+        <p className="p-8 text-center text-red-500">{error ?? 'Trip not found.'}</p>
       </main>
     );
   }
 
   const isCompleted = new Date(trip.endDate).getTime() < new Date().getTime();
-  const owner = trip.participants.find((p) => p.role === 'OWNER');
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-dvh bg-gray-50">
+      <Navbar />
+      {editingTrip && (
+        <EditTripModal
+          trip={{ ...trip, id: String(trip.id) }}
+          onClose={() => setEditingTrip(false)}
+          onSuccess={() => setRefreshVersion(version => version + 1)}
+        />
+      )}
       <TripHeader
         trip={trip}
         isCompleted={isCompleted}
         activeTab={activeTab}
         onTabChange={setActiveTab}
+        onEdit={() => setEditingTrip(true)}
       />
-      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px] gap-6 items-start">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px] gap-6 items-start">
       
         {/*itinerary later*/}
         <DestinationTabs

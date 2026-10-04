@@ -10,7 +10,11 @@ interface NavbarProps {
 
 function subscribeToUser(callback: () => void) {
   window.addEventListener('storage', callback);
-  return () => window.removeEventListener('storage', callback);
+  window.addEventListener('user-updated', callback);
+  return () => {
+    window.removeEventListener('storage', callback);
+    window.removeEventListener('user-updated', callback);
+  };
 }
 
 export default function Navbar({ onNewTripClick }: NavbarProps) {
@@ -26,25 +30,25 @@ export default function Navbar({ onNewTripClick }: NavbarProps) {
   }
 
   return (
-    <nav className="pb-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-purple-700 rounded-2xl px-3 sm:px-5 min-h-16 flex items-center justify-between">
+    <nav aria-label="Main navigation" className="relative z-30 border-b border-gray-200 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="min-h-18 py-3 flex items-center justify-between gap-3">
           <button onClick={() => router.push('/home')} className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center">
-              <MapPin size={15} className="text-white" />
+            <span className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+              <MapPin size={20} className="text-purple-700" />
             </span>
-            <span className="text-white font-medium text-lg tracking-tight">MyTrip</span>
+            <span className="text-purple-800 font-bold text-xl tracking-tight">TripInOrder</span>
           </button>
 
           <div className="flex items-center gap-2.5">
-            <button
+            {onNewTripClick && <button
               aria-label="Create new trip"
               onClick={onNewTripClick}
-              className="flex min-h-11 min-w-11 justify-center items-center gap-1.5 bg-white text-purple-700 font-medium text-sm px-4 py-1.5 rounded-full hover:bg-purple-50 transition-colors"
+              className="flex min-h-11 min-w-11 justify-center items-center gap-1.5 bg-purple-600 text-white font-medium text-sm px-3 sm:px-4 py-1.5 rounded-xl hover:bg-purple-700 transition-colors"
             >
               <Plus size={14} />
               <span className="hidden sm:inline">New trip</span>
-            </button>
+            </button>}
 
             <div ref={menuRef} className="relative">
               <button
@@ -52,7 +56,7 @@ export default function Navbar({ onNewTripClick }: NavbarProps) {
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
                 onClick={() => setMenuOpen((prev) => !prev)}
-                className="w-11 h-11 rounded-full bg-white/20 border border-white/40 flex items-center justify-center text-white text-xs font-medium"
+                className="w-11 h-11 rounded-full bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-700 text-sm font-semibold"
               >
                 {name.charAt(0).toUpperCase() || 'U'}
               </button>

@@ -12,12 +12,18 @@ interface Destination {
 
 interface AddDestinationsModalProps {
   tripId: string;
+  destination?: Destination & { id: string };
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export default function AddDestinationsModal({ tripId, onClose, onSuccess }: AddDestinationsModalProps) {
-  const [destinations, setDestinations] = useState<Destination[]>([
+export default function AddDestinationsModal({ tripId, destination, onClose, onSuccess }: AddDestinationsModalProps) {
+  const [destinations, setDestinations] = useState<Destination[]>(destination ? [{
+    city: destination.city,
+    country: destination.country,
+    startDate: destination.startDate.slice(0, 10),
+    endDate: destination.endDate.slice(0, 10),
+  }] : [
     { city: '', country: '', startDate: '', endDate: '' },
   ]);
   const [loading, setLoading] = useState(false);
@@ -43,6 +49,7 @@ export default function AddDestinationsModal({ tripId, onClose, onSuccess }: Add
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (loading) return;
     setLoading(true);
     setError(null);
 
@@ -56,18 +63,20 @@ export default function AddDestinationsModal({ tripId, onClose, onSuccess }: Add
         orderIndex: index + 1,
       }));
 
-      const res = await fetch('http://localhost:4000/trips/add-destination', {
-        method: 'POST',
+      const res = await fetch(destination
+        ? `http://localhost:4000/trips/update-destination/${destination.id}`
+        : 'http://localhost:4000/trips/add-destination', {
+        method: destination ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(destination ? destinations[0] : body),
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to add destinations');
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.message || 'Failed to save destinations');
       }
 
       onSuccess(); // atualiza cards na home
@@ -97,21 +106,21 @@ export default function AddDestinationsModal({ tripId, onClose, onSuccess }: Add
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border p-4 sm:p-6 w-full max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain break-words">
-        <label className="uppercase text-gray-400 font-semibold text-sm">Add destinations 📍</label>
-        <h2 className="text-2xl font-bold text-gray-500 mb-1">Where are your stops?</h2>
+        <label className="uppercase text-gray-400 font-semibold text-sm">{destination ? 'Edit destination' : 'Add destinations'} 📍</label>
+        <h2 className="text-2xl font-bold text-gray-500 mb-1">{destination ? 'Edit destination' : 'Where are your stops?'}</h2>
 
         {error && (
           <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-500">{error}</p>
         )}
 
-        <div className="flex flex-col gap-3 py-5">
+        <fieldset disabled={loading} className="flex flex-col gap-3 py-5">
           {destinations.map((dest, index) => (
             <div key={index} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
               <div className="flex justify-between items-center mb-3">
                 <span className="text-xs font-bold text-purple-500 uppercase">
                   Destination {index + 1}
                 </span>
-                {destinations.length > 1 && (
+                {!destination && destinations.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeDestination(index)}
@@ -145,6 +154,9 @@ export default function AddDestinationsModal({ tripId, onClose, onSuccess }: Add
                     <option value="">
                       {loadingCountries ? 'Loading...' : 'Select country...'}
                     </option>
+                    {dest.country && !countries.includes(dest.country) && (
+                      <option value={dest.country}>{dest.country}</option>
+                    )}
                     {countries.map(c => (
                       <option key={c} value={c}>{c}</option> 
                     ))}
@@ -168,6 +180,7 @@ export default function AddDestinationsModal({ tripId, onClose, onSuccess }: Add
                   <input
                     type="date"
                     value={dest.endDate}
+                    min={dest.startDate}
                     onChange={(e) => updateDestination(index, 'endDate', e.target.value)}
                     required
                     className="w-full text-sm text-gray-400 rounded-lg border border-gray-200 bg-white px-3 py-2 focus:ring-2 focus:ring-purple-400 focus:outline-none"
@@ -177,18 +190,19 @@ export default function AddDestinationsModal({ tripId, onClose, onSuccess }: Add
             </div>
           ))}
 
-          <button
+          {!destination && <button
             type="button"
             onClick={addDestination}
             className="w-full rounded-xl border border-dashed border-purple-300 py-2 text-sm font-semibold text-purple-500 hover:bg-purple-50">
             + Add destination
-          </button>
-        </div>
+          </button>}
+        </fieldset>
 
         <div className="flex flex-wrap justify-between items-center gap-3 pt-4 mt-2 border-t border-gray-100">
           <button
             type="button"
             onClick={onClose}
+            disabled={loading}
             className="rounded-2xl border bg-white px-3 py-2 font-semibold text-gray-500 hover:border-purple-400">
             Cancel
           </button>

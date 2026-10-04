@@ -134,7 +134,10 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
 
       {drawerOpen && (
         <AddItinerary
+          key={`${activeDestination.id}-${editingItinerary?.id ?? 'new'}`}
           destinationId={activeDestination.id}
+          city={activeDestination.city}
+          country={activeDestination.country}
           startDate={activeDestination.startDate}
           endDate={activeDestination.endDate}
           onClose={() => { 
