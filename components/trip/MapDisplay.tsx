@@ -5,20 +5,37 @@ import { useEffect } from 'react';
 import L from 'leaflet';
 import { Itinerary } from './ItineraryPanel';
 
-const customIcon = L.divIcon({
-  className: '',
-  html: `<div style="
-    background:#7c3aed;
-    width:32px;
-    height:32px;
-    border-radius:50% 50% 50% 0;
-    transform:rotate(-45deg);
-    border:2px solid white;
-    box-shadow:0 2px 6px rgba(0,0,0,0.3);
-  "></div>`,
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-});
+const categoryIcons: Record<string, string> = {
+  Museum: '🏛️',
+  Restaurant: '🍽️',
+  Beach: '🏖️',
+  Hiking: '🌿',
+  Culture: '⛩️',
+  Park: '🏞️',
+  House: '🏖️',
+  Tour: '🎟️',
+  Other: '📌',
+};
+
+const customIcon = (activity: string) =>
+  L.divIcon({
+    className: '',
+    html: `<div style="
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #cfbfebf3;
+      border: 2px solid white;
+      border-radius: 50%;
+      font-size: 20px;
+      box-shadow: 0 2px 6px #0005;
+    ">${categoryIcons[activity] ?? '📌'}</div>`,
+    iconSize: [36, 36],
+    iconAnchor: [18, 36],
+    popupAnchor: [0, -36],
+  });
 
 
 function MapUpdater({ places, selectedPlaceId }: { places: Itinerary[]; selectedPlaceId?: string | null }) {
@@ -53,6 +70,7 @@ export default function MapDisplay({ places, selectedPlaceId }: { places: Itiner
     lat: p.latitude,
     lng: p.longitude,
     name: p.name,
+    icon: p.activity
   }))
 
   const defaultCenter: [number, number] = [51.505, -0.09];
@@ -68,7 +86,7 @@ export default function MapDisplay({ places, selectedPlaceId }: { places: Itiner
       />
       <MapUpdater places={places} selectedPlaceId={selectedPlaceId} />
       {points.map((p, idx) => (
-        <Marker key={idx} position={[p.lat, p.lng]} icon={customIcon}>
+        <Marker key={idx} position={[p.lat, p.lng]} icon={customIcon(p.icon)}>
           <Popup>{p.name}</Popup>
         </Marker>
       ))}

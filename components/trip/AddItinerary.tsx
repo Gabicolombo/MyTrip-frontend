@@ -2,22 +2,17 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Itinerary } from './ItineraryPanel';
+import { searchPlaces, type PhotonPlace } from '@/lib/photon';
 
 interface ItineraryProps {
   destinationId: string;         
+  city: string;
+  country: string;
   startDate: string;             
   endDate: string;              
   onClose: () => void;
   onSuccess: () => void;
   itinerary?: Itinerary; // Optional, only needed for editing existing itinerary items
-}
-
-interface NominatimResult {
-  place_id: number;
-  display_name: string;
-  name: string;
-  lat: string;
-  lon: string;
 }
 
 const ACTIVITIES = [
@@ -32,7 +27,7 @@ const ACTIVITIES = [
   { value: 'Other',       emoji: '📌' },
 ];
 
-export default function AddItinerary({ destinationId, startDate, endDate, onClose, onSuccess, itinerary }: ItineraryProps) {
+export default function AddItinerary({ destinationId, city, country, startDate, endDate, onClose, onSuccess, itinerary }: ItineraryProps) {
   const isEditing = itinerary !== undefined;
   const h = parseInt(itinerary?.time.slice(0,2) ?? '12');
   const h12 = h % 12 === 0 ? 12 : h % 12;
@@ -50,13 +45,14 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
-  const [suggestions, setSuggestions]   = useState<NominatimResult[]>([]);
+  const [suggestions, setSuggestions]   = useState<PhotonPlace[]>([]);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
   const [searching, setSearching]       = useState(false);
-  const [coordsConfirmed, setCoordsConfirmed] = useState(false);
-  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [coordsConfirmed, setCoordsConfirmed] = useState(Boolean(itinerary));
+  const searchController = useRef<AbortController | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
 
-  const justSelected = useRef(false);
   const days = [];
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -67,51 +63,31 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
   // Handle place search input changes
   useEffect(() => {
 
-    if(isEditing && name === itinerary?.name) {
-      setCoordsConfirmed(true);
-      return;
-    }
-
-    if (justSelected.current) {
-      justSelected.current = false;
-      return;
-    }
-    setCoordsConfirmed(false);
-    setLatitude(null);
-    setLongitude(null);
-
-    if (name.length < 3) {
-      setSuggestions([]);
-      setSearching(false);
-      return;
-    }
-
-    setSearching(true);
-
-    if (searchTimeout.current) {
-      clearTimeout(searchTimeout.current);
-    }
-
-    searchTimeout.current = setTimeout(async () => {
+    if (coordsConfirmed || name.trim().length < 3) return;
+    const controller = new AbortController();
+    searchController.current = controller;
+    const timeout = setTimeout(async () => {
       try {
- 
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name)}&format=json&limit=5`);
-        const data: NominatimResult[] = await res.json();
-        setSuggestions(data);
+        const places = await searchPlaces(name.trim(), city, country, controller.signal);
+        if (!controller.signal.aborted) {
+          setSuggestions(places);
+          setSearched(true);
+        }
       } catch (err) {
-        console.error('Error fetching location suggestions:', err);
+        if (!controller.signal.aborted) {
+          setSearchError(err instanceof Error ? err.message : 'Unable to search places. Please try again.');
+        }
       } finally {
-        setSearching(false);
+        if (!controller.signal.aborted) setSearching(false);
       }
-    }, 450);
+    }, 600);
 
     return () => {
-      if (searchTimeout.current) {
-        clearTimeout(searchTimeout.current);
-      }
+      clearTimeout(timeout);
+      controller.abort();
     }
 
-  }, [name]);
+  }, [name, city, country, coordsConfirmed]);
 
   useEffect(() => {
     setTime(`${hour.padStart(2, '0')}:${minute.padStart(2, '0')} ${ampm}`);
@@ -125,12 +101,15 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
     })
   }, [])
 
-  function handleSelectSuggestion(place: NominatimResult) {
-    justSelected.current = true;
-    setName(place.name);
-    setLatitude(parseFloat(place.lat));
-    setLongitude(parseFloat(place.lon));
+  function handleSelectSuggestion(place: PhotonPlace) {
+    searchController.current?.abort();
+    setName(place.properties.name || place.properties.street || '');
+    const [lon, lat] = place.geometry.coordinates;
+    setLatitude(lat);
+    setLongitude(lon);
     setSuggestions([]);
+    setSearching(false);
+    setSearchError(null);
     setCoordsConfirmed(true);
   }
 
@@ -226,7 +205,17 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
             <div className='relative'>
               <input type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  searchController.current?.abort();
+                  setName(e.target.value);
+                  setCoordsConfirmed(false);
+                  setLatitude(null);
+                  setLongitude(null);
+                  setSuggestions([]);
+                  setSearchError(null);
+                  setSearched(false);
+                  setSearching(e.target.value.trim().length >= 3);
+                }}
                 placeholder='Eiffel Tower'
                 className='w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400'
               />
@@ -234,21 +223,21 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
               {suggestions.length > 0 && (
                 <ul className='absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 overflow-hidden max-h-52 overflow-y-auto'>
                   {suggestions.map((place) => {
-                    const parts = place.display_name.split(', ');
-                    const name = place.name;
-                    const address = parts.slice(1, 3).join(', '); 
+                    const { properties } = place;
+                    const name = properties.name || properties.street;
+                    const address = [...new Set([properties.city, properties.state, properties.country].filter(Boolean))].join(', ');
 
                     return (
                       <li
-                        key={place.place_id}
-                        onMouseDown={() => handleSelectSuggestion(place)}
-                        className='flex items-start gap-2 px-3 py-2.5 hover:bg-purple-50 cursor-pointer border-b border-gray-50 last:border-none'
+                        key={`${properties.osm_type}-${properties.osm_id}-${place.geometry.coordinates.join(',')}`}
                       >
+                        <button type="button" onClick={() => handleSelectSuggestion(place)} className="flex w-full items-start gap-2 px-3 py-2.5 text-left hover:bg-purple-50 focus:bg-purple-50">
                         <span className="text-purple-400 mt-0.5">📍</span>
                         <div>
                           <p className="text-sm font-medium text-gray-800">{name}</p>
                           <p className="text-xs text-gray-400">{address}</p>
                         </div>
+                        </button>
                       </li>
                     )
                   })}
@@ -261,7 +250,15 @@ export default function AddItinerary({ destinationId, startDate, endDate, onClos
                 <p className="text-xs text-gray-400">Searching…</p>
               )} 
 
-              {coordsConfirmed && latitude && longitude && (
+              {searchError && <p role="alert" className="text-xs text-red-500">{searchError}</p>}
+              {searched && !searching && !coordsConfirmed && !searchError && suggestions.length === 0 && (
+                <p className="text-xs text-gray-500">No places found. Try another spelling or include the city.</p>
+              )}
+              <p className="text-xs text-gray-400">
+                Search by <a href="https://photon.komoot.io" target="_blank" rel="noreferrer" className="underline">Photon</a>
+                {' · © '}<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="underline">OpenStreetMap contributors</a>
+              </p>
+              {coordsConfirmed && latitude !== null && longitude !== null && (
                 <div className="flex items-center gap-1.5 text-xs text-green-600 bg-green-50 border border-green-200 rounded-lg px-2.5 py-1.5">
                   <span>📍</span>
                   <span>{latitude.toFixed(5)}, {longitude.toFixed(5)}</span>

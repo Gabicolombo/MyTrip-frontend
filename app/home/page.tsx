@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import RegisterTripModal from '@/components/trip/RegisterTripModal';
+import EditTripModal from '@/components/trip/EditTripModal';
 import AddDestinationsModal from '@/components/trip/AddDestinationModal';
 import { Trash2 } from 'lucide-react';
 import ConfirmModal from '@/components/common/confirmModal';
@@ -35,6 +36,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
+  const [editingDestination, setEditingDestination] = useState<{ tripId: string; destination: Destination } | null>(null);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [deletingTrip, setDeletingTrip] = useState<Trip | null>(null);
   const [destinationsTripId, setDestinationsTripId] = useState<string | null>(null);
@@ -93,11 +96,28 @@ export default function HomePage() {
           />
         )}
 
+        {editingTrip && (
+          <EditTripModal
+            trip={editingTrip}
+            onClose={() => setEditingTrip(null)}
+            onSuccess={fetchTrips}
+          />
+        )}
+
         {destinationsTripId && (
           <AddDestinationsModal
             tripId={destinationsTripId}
             onClose={() => setDestinationsTripId(null)}
             onSuccess={() => { fetchTrips(); setDestinationsTripId(null); }}
+          />
+        )}
+
+        {editingDestination && (
+          <AddDestinationsModal
+            tripId={editingDestination.tripId}
+            destination={editingDestination.destination}
+            onClose={() => setEditingDestination(null)}
+            onSuccess={fetchTrips}
           />
         )}
 
@@ -142,28 +162,41 @@ export default function HomePage() {
                     {trip.title}
                   </h2>
 
-                  {hasDestinations ? (
-                    <p className="text-sm text-gray-500 mt-2 text-center">
-                      📍{trip.destinations.map((destination, index) => (
-                        <span key={destination.id}>
-                          {destination.city}
-                          {index < trip.destinations.length - 1 && ' • '}
-                        </span>
-                      ))}
+                  {hasDestinations && (
+                    <p className="text-purple-500 text-center">
+                        {trip.destinations.map(d => d.city).join(', ')}
                     </p>
-                  ) : (
-                    <div className="flex justify-center mt-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDestinationsTripId(trip.id);
-                        }}
-                        className="text-xs text-purple-500 border border-purple-300 rounded-lg px-3 py-1 hover:bg-purple-50">
-                        + Add destinations
-                      </button>
-                    </div>
                   )}
 
+                  <div className="flex flex-wrap gap-2 justify-center mt-2">
+                    {hasDestinations && (
+                      <label className="text-xs text-purple-600">
+                        Edit destination
+                        <select
+                          aria-label={`Edit destination in ${trip.title}`}
+                          value=""
+                          onChange={e => {
+                            const destination = trip.destinations.find(d => String(d.id) === e.target.value);
+                            if (destination) setEditingDestination({ tripId: trip.id, destination });
+                          }}
+                          className="ml-2 rounded-lg border border-purple-300 bg-white px-3 py-1"
+                        >
+                          <option value="" disabled>Select destination</option>
+                          {trip.destinations.map(destination => (
+                            <option key={destination.id} value={destination.id}>{destination.city}</option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDestinationsTripId(trip.id);
+                      }}
+                      className="text-xs text-purple-500 border border-purple-300 rounded-lg px-3 py-1 hover:bg-purple-50">
+                      + Add destinations
+                    </button>
+                  </div>
 
                   <p className="text-gray-500 mb-4 py-4 text-center">
                       📅{format(parseISO(trip.startDate), 'dd MMM')} → {format(parseISO(trip.endDate), 'dd MMM')}
@@ -187,7 +220,8 @@ export default function HomePage() {
                       Details
                     </button>
                     {!isCompleted && (
-                      <button 
+                      <button
+                        onClick={() => setEditingTrip(trip)}
                         className='flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 block mx-auto'>
                       Edit trip
                     </button>
