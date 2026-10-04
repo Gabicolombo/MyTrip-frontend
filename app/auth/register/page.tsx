@@ -2,6 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import countriesData from 'world-countries';
+
+const nationalityCountries = [...countriesData].sort((a, b) =>
+  a.name.common.localeCompare(b.name.common, 'en', { sensitivity: 'base' })
+);
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -57,7 +62,7 @@ export default function RegisterPage() {
         bg-center
         relative" style={{backgroundImage: "url('/mytripv3.jpg')"}}>
        <form onSubmit={handleSubmit} className='bg-white p-5 sm:p-10 rounded-2xl shadow-lg font-bold text-center text-purple-700 w-full max-w-lg'>
-        <h1 className='text-3xl font-bold mb-8 text-center text-purple-700'>MyTrip</h1>
+        <h1 className='text-3xl font-bold mb-8 text-center text-purple-700'>TripInOrder</h1>
 
         {error && <p className='text-red-500 mb-4'>{error}</p>}
 
@@ -88,7 +93,7 @@ export default function RegisterPage() {
             type="text"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder='mytrip@gmail.com'
+            placeholder='TripInOrder@gmail.com'
             className="w-full
               rounded-lg
               border
@@ -134,20 +139,23 @@ export default function RegisterPage() {
         </div>
 
         <div className='mb-4'>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Nationality
+          <label htmlFor="nationality" className="block text-sm font-medium text-gray-700 mb-1">
+            Country of nationality
           </label>
 
           <select
+            id="nationality"
             name="nationality"
             className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
             value={nationality}
             onChange={(e) => setNationality(e.target.value)}
           >
-            <option value="">Select your nationality</option>
-            <option value="BR">🇧🇷 Brazilian</option>
-            <option value="US">🇺🇸 American</option>
-            <option value="FR">🇫🇷 French</option>
+            <option value="">Select your country</option>
+            {nationalityCountries.map(country => (
+              <option key={country.cca2} value={country.cca2}>
+                {country.flag} {country.name.common}
+              </option>
+            ))}
           </select>
 
         </div>

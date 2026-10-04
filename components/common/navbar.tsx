@@ -10,7 +10,11 @@ interface NavbarProps {
 
 function subscribeToUser(callback: () => void) {
   window.addEventListener('storage', callback);
-  return () => window.removeEventListener('storage', callback);
+  window.addEventListener('user-updated', callback);
+  return () => {
+    window.removeEventListener('storage', callback);
+    window.removeEventListener('user-updated', callback);
+  };
 }
 
 export default function Navbar({ onNewTripClick }: NavbarProps) {
@@ -33,7 +37,7 @@ export default function Navbar({ onNewTripClick }: NavbarProps) {
             <span className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
               <MapPin size={20} className="text-purple-700" />
             </span>
-            <span className="text-purple-800 font-bold text-xl tracking-tight">MyTrip</span>
+            <span className="text-purple-800 font-bold text-xl tracking-tight">TripInOrder</span>
           </button>
 
           <div className="flex items-center gap-2.5">

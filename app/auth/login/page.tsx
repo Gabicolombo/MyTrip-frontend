@@ -57,7 +57,7 @@ export default function LoginPage() {
         bg-center
         relative" style={{backgroundImage: "url('/mytripv3.jpg')"}}>
        <form onSubmit={handleSubmit} className='bg-white p-5 sm:p-10 rounded-2xl shadow-lg font-bold text-center text-purple-700 w-full max-w-lg'>
-        <h1 className='text-3xl font-bold mb-8 text-center text-purple-700'>MyTrip</h1>
+        <h1 className='text-3xl font-bold mb-8 text-center text-purple-700'>TripInOrder</h1>
 
         {error && <p className='text-red-500 mb-4'>{error}</p>}
 
@@ -67,7 +67,7 @@ export default function LoginPage() {
             type="text"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder='mytrip@gmail.com'
+            placeholder='TripInOrder@gmail.com'
             className="w-full
               rounded-lg
               border
