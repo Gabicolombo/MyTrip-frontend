@@ -85,9 +85,13 @@ export default function HomePage() {
   }, []);
 
   return (
-    <main className="min-h-dvh bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <main className="min-h-dvh bg-gray-50">
       <Navbar onNewTripClick={() => setIsModalOpen(true)} />
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <header className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">My trips</h1>
+          <p className="mt-2 text-sm sm:text-base text-gray-500">Your next adventure starts here.</p>
+        </header>
 
         {isModalOpen && (
           <RegisterTripModal
