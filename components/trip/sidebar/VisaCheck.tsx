@@ -1,6 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import countriesData from 'world-countries';
+
+const countries = [...countriesData].sort((a, b) =>
+  a.name.common.localeCompare(b.name.common, 'en', { sensitivity: 'base' })
+);
 
 interface VisaCheckProps {
   destinations: string[];
@@ -22,73 +27,25 @@ function getVisaBadge(requirement: string) {
 
   return { label: requirement, cls: 'bg-gray-100 text-gray-400' };
 }
-console.log(
-  'API key existe?',
-  Boolean(process.env.NEXT_PUBLIC_REST_COUNTRIES_API_KEY)
-);
 
 export default function VisaCheck({ destinations }: VisaCheckProps) {
-  const [countries, setCountries]     = useState<string[]>([]);
-  const [loadingCountries, setLoadingCountries] = useState(true);
   const [passport, setPassport]       = useState('');
   const [results, setResults]         = useState<Record<string, string> | null>(null);
   const [loading, setLoading]         = useState(false);
-  const [offset, setOffset] = useState(0);
-  const [isOpen, setIsOpen] = useState(false);
-
-  const limit = 25;
-  useEffect(() => {
-    async function fetchCountries() {
-      try {
-        const res  = await fetch(`https://api.restcountries.com/countries/v5?fields=name&limit=${limit}&offset=${offset}`, {
-          headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_REST_COUNTRIES_API_KEY}`}
-        });
-        const responseBody  = await res.json();
-        if (!res.ok) {
-          console.error('Error: ', responseBody );
-          throw new Error('Internal error');
-        }
-        
-        const names = responseBody.data.objects
-          .map((c: { names: { common: string } }) => c.names.common)
-          .sort();
-        setCountries(currentCountries => [
-        ...currentCountries,
-        ...names,
-      ]);
-      } catch (err) {
-        console.error('Failed to fetch countries', err);
-      } finally {
-        setLoadingCountries(false);
-      }
-    }
-    fetchCountries();
-  }, [offset]);
-
-  const handleScroll = (event: React.UIEvent<HTMLUListElement>) => {
-    const list = event.currentTarget;
-
-    const reachedBottom =
-    list.scrollTop + list.clientHeight >= list.scrollHeight - 10;
-
-    console.log({ reachedBottom });
-
-    if (reachedBottom && !loadingCountries) {
-      setOffset(currentOffset => currentOffset + 25);
-    }
-  };
+  const [error, setError] = useState<string | null>(null);
+  const uniqueDestinations = [...new Set(destinations.map(country => country.trim()).filter(Boolean))];
 
   async function handleCheck() {
-    if (!passport || !destinations) {
-      alert('Please select both passport and destination countries.');
+    if (!passport || uniqueDestinations.length === 0 || loading) {
       return;
     }
     setLoading(true);
     setResults(null);
+    setError(null);
 
     try {
       const checks = await Promise.all(
-        destinations.map(async (destination) => {
+        uniqueDestinations.map(async (destination) => {
           const res = await fetch('http://localhost:4000/trips/visa-check', {
             method: 'POST',
             headers: {
@@ -98,7 +55,9 @@ export default function VisaCheck({ destinations }: VisaCheckProps) {
             body: JSON.stringify({ passport, destination }),
           });
           const data = await res.json();
-          console.log(data)
+          if (!res.ok || typeof data.requirement !== 'string') {
+            throw new Error('Failed to check visa requirements. Please try again later.');
+          }
           return { destination, requirement: data.requirement };
         })
       );
@@ -107,14 +66,13 @@ export default function VisaCheck({ destinations }: VisaCheckProps) {
       checks.forEach(c => { map[c.destination] = c.requirement; });
       setResults(map);
     } catch (err) {
-      console.error('Visa check failed', err);
-      alert('Failed to check visa requirements. Please try again later.');
+      setError(err instanceof Error ? err.message : 'Failed to check visa requirements. Please try again later.');
     } finally {
       setLoading(false);
     }
   }
 
-  const selectClass = "w-full text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition disabled:opacity-50";
+  const selectClass = "w-full min-w-0 min-h-11 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition disabled:opacity-50";
 
   return (
     <div className='relative z-20 min-w-0 break-words bg-white rounded-2xl shadow-sm overflow-visible'>
@@ -128,7 +86,7 @@ export default function VisaCheck({ destinations }: VisaCheckProps) {
             Destinations
           </p>
           <div className='flex flex-wrap gap-2'>
-            {destinations.map(dest => (
+            {uniqueDestinations.map(dest => (
               <span key={dest} className="text-xs text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full">
                 {dest}
               </span>
@@ -137,62 +95,41 @@ export default function VisaCheck({ destinations }: VisaCheckProps) {
         </div>
 
         <div className='relative'>
-          <p className='text-xs font-semibold uppercase tracking-widest text-purple-400'>
+          <label htmlFor="visa-passport" className='block mb-1 text-xs font-semibold uppercase tracking-widest text-purple-400'>
             Your passport
-          </p>
-          <button
-            type='button'
-            onClick={() => setIsOpen(!isOpen)}
+          </label>
+          <select
+            id="visa-passport"
+            value={passport}
+            disabled={loading}
+            onChange={event => {
+              setPassport(event.target.value);
+              setResults(null);
+              setError(null);
+            }}
             className={selectClass}
           >
-            {passport || 'Select your country'}
-          </button>
-
-
-          {isOpen && (
-            <ul className="
-              absolute z-50
-              bottom-full left-0 mb-1
-              w-full max-h-100 overflow-y-auto
-              bg-white border border-gray-200
-              rounded-xl shadow-lg
-              py-1"
-              onScroll={handleScroll}>
-              {countries.map((country) => (
-                <li key={country}>
-                  <button
-                    type='button'
-                    onClick={() => {
-                      setPassport(country)
-                      setIsOpen(false);
-                    }}
-                    className="
-                      w-full px-3 py-2
-                      text-left text-sm text-gray-700
-                      hover:bg-purple-50 hover:text-purple-700
-                      transition-colors
-                    "
-                  >
-                    {country}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+            <option value="" disabled>Select your country</option>
+            {countries.map(country => (
+              <option key={country.cca2} value={country.name.common}>{country.name.common}</option>
+            ))}
+          </select>
 
         </div>
 
         <button
           onClick={handleCheck}
-          disabled={!passport || loading}
-          className="w-full py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-full transition-colors"
+          disabled={!passport || loading || uniqueDestinations.length === 0}
+          className="w-full min-h-11 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-full transition-colors"
         >
           {loading ? 'Checking...' : 'Check requirements'}
         </button>
 
+        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+        {uniqueDestinations.length === 0 && <p className="text-xs text-gray-500">Add a destination to check visa requirements.</p>}
         {results && (
           <div className="flex flex-col gap-2 pt-1 border-t border-gray-100">
-            {destinations.map(dest => {
+            {uniqueDestinations.map(dest => {
               const badge = getVisaBadge(results[dest] ?? '-1');
               return (
                 <div key={dest} className="flex flex-wrap gap-2 items-center justify-between">
