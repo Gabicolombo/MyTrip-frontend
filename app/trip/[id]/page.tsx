@@ -1,5 +1,7 @@
 'use client';
 
+import { TRIP_API_URL } from '@/lib/trip';
+
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Navbar from '@/components/common/navbar';
@@ -73,7 +75,7 @@ export default function TripDetailsPage() {
   useEffect(() => {
     async function fetchTripDetails() {
       try {
-        const response = await fetch('http://localhost:4000/graphql', {
+        const response = await fetch(`${TRIP_API_URL}/graphql`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

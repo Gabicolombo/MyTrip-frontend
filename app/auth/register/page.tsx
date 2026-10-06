@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import ResendVerification from '@/components/common/ResendVerification';
+import { AUTH_API_URL } from '@/lib/auth';
 import countriesData from 'world-countries';
 
 const nationalityCountries = [...countriesData].sort((a, b) =>
@@ -9,7 +11,8 @@ const nationalityCountries = [...countriesData].sort((a, b) =>
 );
 
 export default function RegisterPage() {
-  const router = useRouter();
+  const [registered, setRegistered] = useState(false);
+  const [verificationFailed, setVerificationFailed] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -24,7 +27,7 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      const res = await fetch('http://localhost:3333/users/register', {
+      const res = await fetch(`${AUTH_API_URL}/users/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -33,11 +36,23 @@ export default function RegisterPage() {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Login failed');
+        const errorData = await res.json().catch(() => null);
+        const message = Array.isArray(errorData?.message)
+          ? errorData.message.join(' ')
+          : typeof errorData?.message === 'string' ? errorData.message : 'Unable to create your account. Please try again.';
+
+        if (message.includes('Unable to send verification email')) {
+          setVerificationFailed(true);
+          setError(message);
+          setPassword('');
+          return;
+        }
+
+        throw new Error(message);
       }
 
-      router.push('/auth/login');
+      setRegistered(true);
+      setPassword('');
 
     }catch (error: unknown) {
       if (error instanceof Error) {
@@ -61,7 +76,23 @@ export default function RegisterPage() {
         bg-cover
         bg-center
         relative" style={{backgroundImage: "url('/mytripv3.jpg')"}}>
-       <form onSubmit={handleSubmit} className='bg-white p-5 sm:p-10 rounded-2xl shadow-lg font-bold text-center text-purple-700 w-full max-w-lg'>
+       <div className='bg-white p-5 sm:p-10 rounded-2xl shadow-lg font-bold text-center text-purple-700 w-full max-w-lg'>
+       {registered || verificationFailed ? (
+         <section lang="en">
+           <h1 className="mb-6 text-3xl font-bold">{verificationFailed ? 'Verify your email' : 'Check your email'}</h1>
+           {verificationFailed ? (
+             <>
+               <p role="alert" className="mb-4 text-red-500">{error}</p>
+               <p className="font-normal text-gray-600">Use the button below to resend the verification email to {email} once the countdown ends.</p>
+             </>
+           ) : (
+             <p role="status" className="font-normal text-gray-600">We sent a verification link to {email}. Please check your spam folder too.</p>
+           )}
+           <ResendVerification initialEmail={email} initialCooldown={verificationFailed ? 60 : 0} />
+           <Link href="/auth/login" className="mt-6 inline-block hover:underline">Sign in</Link>
+         </section>
+       ) : (
+       <form onSubmit={handleSubmit}>
         <h1 className='text-3xl font-bold mb-8 text-center text-purple-700'>TripInOrder</h1>
 
         {error && <p className='text-red-500 mb-4'>{error}</p>}
@@ -170,6 +201,8 @@ export default function RegisterPage() {
         
 
        </form>
+       )}
+       </div>
     </div>
   )
 

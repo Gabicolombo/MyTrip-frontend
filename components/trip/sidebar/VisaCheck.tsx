@@ -1,5 +1,7 @@
 'use client';
 
+import { TRIP_API_URL } from '@/lib/trip';
+
 import { useState } from 'react';
 import countriesData from 'world-countries';
 
@@ -46,7 +48,7 @@ export default function VisaCheck({ destinations }: VisaCheckProps) {
     try {
       const checks = await Promise.all(
         uniqueDestinations.map(async (destination) => {
-          const res = await fetch('http://localhost:4000/trips/visa-check', {
+          const res = await fetch(`${TRIP_API_URL}/trips/visa-check`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

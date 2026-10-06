@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import ResendVerification from '@/components/common/ResendVerification';
+import { AUTH_API_URL } from '@/lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -9,6 +11,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent) {
 
@@ -17,7 +20,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const res = await fetch('http://localhost:3333/auth/login', {
+      const res = await fetch(`${AUTH_API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -25,6 +28,11 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
+      if (res.status === 403) {
+        setVerificationEmail(email);
+        setError('Please verify your email before signing in. Check your inbox or resend the verification email below.');
+        return;
+      }
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || 'Login failed');
@@ -56,7 +64,8 @@ export default function LoginPage() {
         bg-cover
         bg-center
         relative" style={{backgroundImage: "url('/mytripv3.jpg')"}}>
-       <form onSubmit={handleSubmit} className='bg-white p-5 sm:p-10 rounded-2xl shadow-lg font-bold text-center text-purple-700 w-full max-w-lg'>
+       <div className='bg-white p-5 sm:p-10 rounded-2xl shadow-lg font-bold text-center text-purple-700 w-full max-w-lg'>
+       <form onSubmit={handleSubmit}>
         <h1 className='text-3xl font-bold mb-8 text-center text-purple-700'>TripInOrder</h1>
 
         {error && <p className='text-red-500 mb-4'>{error}</p>}
@@ -126,6 +135,17 @@ export default function LoginPage() {
         </div>
 
        </form>
+       {verificationEmail === null && (
+         <button
+           type="button"
+           onClick={() => setVerificationEmail(email)}
+           className="mt-4 text-sm text-purple-600 hover:underline"
+         >
+           Didn&apos;t receive a verification email?
+         </button>
+       )}
+       {verificationEmail !== null && <ResendVerification initialEmail={verificationEmail} />}
+       </div>
     </div>
 );
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import { TRIP_API_URL } from '@/lib/trip';
+
 import { useState, useEffect } from 'react';
 import countriesData from 'world-countries';
 
@@ -64,8 +66,8 @@ export default function AddDestinationsModal({ tripId, destination, onClose, onS
       }));
 
       const res = await fetch(destination
-        ? `http://localhost:4000/trips/update-destination/${destination.id}`
-        : 'http://localhost:4000/trips/add-destination', {
+        ? `${TRIP_API_URL}/trips/update-destination/${destination.id}`
+        : `${TRIP_API_URL}/trips/add-destination`, {
         method: destination ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',

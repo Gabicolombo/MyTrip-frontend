@@ -1,5 +1,7 @@
 'use client';
 
+import { TRIP_API_URL } from '@/lib/trip';
+
 import { useState, useEffect, useRef } from 'react';
 import ItineraryPanel from './ItineraryPanel';
 import AddItinerary from './AddItinerary';
@@ -55,7 +57,7 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
 
   async function fetchItinerary() {
     try {
-      const res = await fetch(`http://localhost:4000/trips/itinerary/${activeDestination?.id}`, {
+      const res = await fetch(`${TRIP_API_URL}/trips/itinerary/${activeDestination?.id}`, {
         headers: getHeaders()
       });
       const data = await res.json();
@@ -69,7 +71,7 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
 
   async function onDeletePlace(place: Itinerary) {
     try {
-      const res = await fetch(`http://localhost:4000/trips/delete-itinerary/${place.id}`, {
+      const res = await fetch(`${TRIP_API_URL}/trips/delete-itinerary/${place.id}`, {
         method: 'DELETE',
         headers: getHeaders()
       });

@@ -1,5 +1,7 @@
 'use client';
 
+import { TRIP_API_URL } from '@/lib/trip';
+
 import { useState, useRef, useEffect } from 'react';
 import { Itinerary } from './ItineraryPanel';
 import { searchPlaces, type PhotonPlace } from '@/lib/photon';
@@ -153,14 +155,14 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
       };
       if(isEditing) {
-        res = await fetch(`http://localhost:4000/trips/update-itinerary/${itinerary?.id}`, {
+        res = await fetch(`${TRIP_API_URL}/trips/update-itinerary/${itinerary?.id}`, {
           method: 'PATCH',
           headers,
           body,
         });
       }
       else {
-        res = await fetch('http://localhost:4000/trips/add-itinerary', {
+        res = await fetch(`${TRIP_API_URL}/trips/add-itinerary`, {
           method: 'POST',
           headers,
           body,

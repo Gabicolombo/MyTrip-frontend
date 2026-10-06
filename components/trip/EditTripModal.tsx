@@ -1,5 +1,7 @@
 'use client';
 
+import { TRIP_API_URL } from '@/lib/trip';
+
 import { useState } from 'react';
 
 interface EditTripModalProps {
@@ -31,7 +33,7 @@ export default function EditTripModal({ trip, onClose, onSuccess }: EditTripModa
       body.append('description', description);
       if (file) body.append('file', file);
 
-      const response = await fetch(`http://localhost:4000/trips/update-trip/${trip.id}`, {
+      const response = await fetch(`${TRIP_API_URL}/trips/update-trip/${trip.id}`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         body,

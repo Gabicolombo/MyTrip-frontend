@@ -1,5 +1,7 @@
 'use client';
 
+import { TRIP_API_URL } from '@/lib/trip';
+
 import { useState } from 'react';
 
 interface RegisterTripModalProps {
@@ -29,7 +31,7 @@ export default function RegisterTripModal({ onClose, onSuccess }: RegisterTripMo
       formData.append('endDate', endDate);
       if (file) formData.append('file', file);
 
-      const res = await fetch('http://localhost:4000/trips/create-trip', {
+      const res = await fetch(`${TRIP_API_URL}/trips/create-trip`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

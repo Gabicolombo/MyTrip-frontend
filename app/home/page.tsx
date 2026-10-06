@@ -1,5 +1,7 @@
 'use client';
 
+import { TRIP_API_URL } from '@/lib/trip';
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import RegisterTripModal from '@/components/trip/RegisterTripModal';
@@ -45,7 +47,7 @@ export default function HomePage() {
   async function deleteTrip(tripId: string) {
 
     try {
-      const response = await fetch(`http://localhost:4000/trips/delete-trip/${tripId}`, {
+      const response = await fetch(`${TRIP_API_URL}/trips/delete-trip/${tripId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -63,7 +65,7 @@ export default function HomePage() {
 
   async function fetchTrips() {
     try {
-      const response = await fetch('http://localhost:4000/trips/my-trips', {
+      const response = await fetch(`${TRIP_API_URL}/trips/my-trips`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
