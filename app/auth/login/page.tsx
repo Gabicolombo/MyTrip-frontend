@@ -123,14 +123,14 @@ export default function LoginPage() {
 
         <div className="mt-4 text-center">
           <span className="text-sm text-gray-600">
-            Already have an account?
+            Don&apos;t have an account?
           </span>{' '}
           <button
             type="button"
             onClick={() => router.push('/auth/register')}
             className="text-sm text-purple-600 hover:underline"
           >
-            Sign in
+            Sign up
           </button>
         </div>
 
