@@ -6,8 +6,10 @@ import Link from 'next/link';
 import { ArrowLeft, UserRound } from 'lucide-react';
 import countriesData from 'world-countries';
 import Navbar from '@/components/common/navbar';
+import { AUTH_API_URL } from '@/lib/auth';
 
-const PROFILE_URL = 'http://localhost:3333/users/me';
+const PROFILE_URL = `${AUTH_API_URL.replace(/\/+$/, '')}/users/me`;
+const AUTH_ERROR = 'Unable to authenticate your session. Please sign in again to access your profile.';
 const countries = [...countriesData].sort((a, b) =>
   a.name.common.localeCompare(b.name.common, 'en', { sensitivity: 'base' })
 );
@@ -31,6 +33,7 @@ function readProfile(data: unknown): Profile {
 }
 
 async function responseError(response: Response) {
+  if (response.status === 401) return new Error(AUTH_ERROR);
   const data = await response.json().catch(() => null);
   return new Error(Array.isArray(data?.message) ? data.message.join(' ') : data?.message || 'Something went wrong. Please try again.');
 }
@@ -75,12 +78,7 @@ export default function ProfilePage() {
           signal: controller.signal,
           cache: 'no-store',
         });
-        if (response.status === 401) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('name');
-          router.replace('/auth/login');
-          return;
-        }
+        if (controller.signal.aborted) return;
         if (!response.ok) throw await responseError(response);
         const user = readProfile(await response.json());
         if (controller.signal.aborted) return;
@@ -115,7 +113,6 @@ export default function ProfilePage() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({ ...updated, ...(password ? { password } : {}) }),
       });
-      if (response.status === 401) { clearSession(); return; }
       if (!response.ok) throw await responseError(response);
       setProfile(updated);
       setForm(updated);
@@ -141,7 +138,6 @@ export default function ProfilePage() {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
-      if (response.status === 401) { clearSession(); return; }
       if (!response.ok) throw await responseError(response);
       clearSession();
     } catch (err) {
@@ -164,6 +160,7 @@ export default function ProfilePage() {
         <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">My profile</h1>
         <p className="mt-2 mb-6 text-gray-500">Manage your personal details and account.</p>
         {error && <p role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</p>}
+        {error === AUTH_ERROR && <Link href="/auth/login" className="mb-4 inline-flex min-h-11 items-center rounded-xl bg-purple-600 px-4 text-white hover:bg-purple-700">Sign in again</Link>}
         {success && <p role="status" className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">Your profile has been updated.</p>}
         {loading ? <p role="status" className="py-10 text-center text-gray-500">Loading profile...</p> : !profile ? (
           <button onClick={() => { setError(null); setLoading(true); setAttempt(value => value + 1); }} className="min-h-11 rounded-xl bg-purple-600 px-4 text-white">Try again</button>
