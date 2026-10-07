@@ -2,12 +2,23 @@
 
 import { TRIP_API_URL } from '@/lib/trip';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import countriesData from 'world-countries';
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+  ComboboxTrigger,
+  ComboboxValue,
+} from '@/components/ui/combobox';
 
 const countries = [...countriesData].sort((a, b) =>
   a.name.common.localeCompare(b.name.common, 'en', { sensitivity: 'base' })
 );
+const countryNames = countries.map(country => country.name.common);
 
 interface VisaCheckProps {
   destinations: string[];
@@ -31,6 +42,7 @@ function getVisaBadge(requirement: string) {
 }
 
 export default function VisaCheck({ destinations }: VisaCheckProps) {
+  const countrySearchRef = useRef<HTMLInputElement>(null);
   const [passport, setPassport]       = useState('');
   const [results, setResults]         = useState<Record<string, string> | null>(null);
   const [loading, setLoading]         = useState(false);
@@ -74,8 +86,6 @@ export default function VisaCheck({ destinations }: VisaCheckProps) {
     }
   }
 
-  const selectClass = "w-full min-w-0 min-h-11 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-400 transition disabled:opacity-50";
-
   return (
     <div className='relative z-20 min-w-0 break-words bg-white rounded-2xl shadow-sm overflow-visible'>
       <div className="px-5 py-4 border-b border-gray-100">
@@ -100,22 +110,43 @@ export default function VisaCheck({ destinations }: VisaCheckProps) {
           <label htmlFor="visa-passport" className='block mb-1 text-xs font-semibold uppercase tracking-widest text-purple-400'>
             Your passport
           </label>
-          <select
-            id="visa-passport"
-            value={passport}
+          <Combobox
+            items={countryNames}
+            value={passport || null}
             disabled={loading}
-            onChange={event => {
-              setPassport(event.target.value);
+            onValueChange={value => {
+              setPassport(value ?? '');
               setResults(null);
               setError(null);
             }}
-            className={selectClass}
           >
-            <option value="" disabled>Select your country</option>
-            {countries.map(country => (
-              <option key={country.cca2} value={country.name.common}>{country.name.common}</option>
-            ))}
-          </select>
+            <ComboboxTrigger
+              id="visa-passport"
+              disabled={loading}
+              className="flex w-full min-h-11 cursor-pointer items-center justify-between gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-left text-sm text-gray-700 hover:border-purple-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span className="min-w-0 truncate">
+                <ComboboxValue placeholder="Select your country" />
+              </span>
+            </ComboboxTrigger>
+            <ComboboxContent initialFocus={countrySearchRef}>
+              <ComboboxInput
+                ref={countrySearchRef}
+                aria-label="Search countries"
+                placeholder="Search countries..."
+                showTrigger={false}
+                className="min-h-11 focus-within:border-purple-400 focus-within:ring-purple-200"
+              />
+              <ComboboxEmpty>No countries found.</ComboboxEmpty>
+              <ComboboxList>
+                {(country: string) => (
+                  <ComboboxItem key={country} value={country} className="cursor-pointer data-highlighted:bg-purple-50 data-highlighted:text-purple-700">
+                    {country}
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
 
         </div>
 

@@ -7,12 +7,20 @@ import { ArrowLeft, UserRound } from 'lucide-react';
 import countriesData from 'world-countries';
 import Navbar from '@/components/common/navbar';
 import { AUTH_API_URL } from '@/lib/auth';
+import {
+  Combobox, ComboboxTrigger, ComboboxValue, ComboboxInput,
+  ComboboxContent, ComboboxList, ComboboxItem, ComboboxEmpty,
+} from '@/components/ui/combobox';
 
 const PROFILE_URL = `${AUTH_API_URL.replace(/\/+$/, '')}/users/me`;
 const AUTH_ERROR = 'Unable to authenticate your session. Please sign in again to access your profile.';
 const countries = [...countriesData].sort((a, b) =>
   a.name.common.localeCompare(b.name.common, 'en', { sensitivity: 'base' })
 );
+const countryOptions = countries.map(country => ({
+  value: country.cca2,
+  label: `${country.flag} ${country.name.common}`,
+}));
 
 interface Profile {
   name: string;
@@ -56,6 +64,9 @@ export default function ProfilePage() {
   const [attempt, setAttempt] = useState(0);
   const deleteDialog = useRef<HTMLDialogElement>(null);
   const busy = useRef(false);
+  const nationalitySearchRef = useRef<HTMLInputElement>(null);
+  const selectedCountry = countryOptions.find(country => country.value === form.nationality)
+    ?? (form.nationality ? { value: form.nationality, label: form.nationality } : null);
 
   function clearSession() {
     localStorage.removeItem('token');
@@ -174,13 +185,38 @@ export default function ProfilePage() {
               <fieldset disabled={saving || deleting} className="grid min-w-0 gap-5 disabled:opacity-60 sm:grid-cols-2">
                 <label className="min-w-0 text-sm font-medium text-gray-600">Name<input autoComplete="name" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className={inputClass} /></label>
                 <label className="min-w-0 text-sm font-medium text-gray-600">Email<input type="email" autoComplete="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className={inputClass} /></label>
-                <label className="min-w-0 text-sm font-medium text-gray-600 sm:col-span-2">Country of nationality
-                  <select value={form.nationality} onChange={e => setForm({ ...form, nationality: e.target.value })} className={inputClass}>
-                    <option value="">Select your country</option>
-                    {form.nationality && !countries.some(country => country.cca2 === form.nationality) && <option value={form.nationality}>{form.nationality}</option>}
-                    {countries.map(country => <option key={country.cca2} value={country.cca2}>{country.flag} {country.name.common}</option>)}
-                  </select>
-                </label>
+                <div className="min-w-0 text-sm font-medium text-gray-600 sm:col-span-2">
+                  <label htmlFor="profile-nationality">Country of nationality</label>
+                  <Combobox
+                    items={countryOptions}
+                    value={selectedCountry}
+                    isItemEqualToValue={(country, selected) => country.value === selected.value}
+                    disabled={saving || deleting}
+                    onValueChange={country => {
+                      setForm(current => ({ ...current, nationality: country?.value ?? '' }));
+                      setSuccess(false);
+                    }}
+                  >
+                    <ComboboxTrigger id="profile-nationality" type="button"
+                      className={`${inputClass} flex cursor-pointer items-center justify-between gap-2 text-left hover:border-purple-400 disabled:cursor-not-allowed`}>
+                      <span className="min-w-0 truncate"><ComboboxValue placeholder="Select your country" /></span>
+                    </ComboboxTrigger>
+                    <ComboboxContent initialFocus={nationalitySearchRef}>
+                      <ComboboxInput ref={nationalitySearchRef} aria-label="Search countries"
+                        placeholder="Search countries..." showTrigger={false}
+                        className="min-h-11 focus-within:border-purple-400 focus-within:ring-purple-200" />
+                      <ComboboxEmpty>No countries found.</ComboboxEmpty>
+                      <ComboboxList>
+                        {(country: { value: string; label: string }) => (
+                          <ComboboxItem key={country.value} value={country}
+                            className="cursor-pointer data-highlighted:bg-purple-50 data-highlighted:text-purple-700">
+                            {country.label}
+                          </ComboboxItem>
+                        )}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+                </div>
                 <label className="min-w-0 text-sm font-medium text-gray-600 sm:col-span-2">New password
                   <input type="password" autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} aria-describedby="password-help" className={inputClass} />
                   <span id="password-help" className="mt-2 block text-xs font-normal text-gray-500">Leave blank to keep your current password.</span>

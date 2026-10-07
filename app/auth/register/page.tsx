@@ -1,14 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import ResendVerification from '@/components/common/ResendVerification';
 import { AUTH_API_URL } from '@/lib/auth';
 import countriesData from 'world-countries';
+import {
+  Combobox, ComboboxTrigger, ComboboxValue, ComboboxInput,
+  ComboboxContent, ComboboxList, ComboboxItem, ComboboxEmpty,
+} from '@/components/ui/combobox';
 
 const nationalityCountries = [...countriesData].sort((a, b) =>
   a.name.common.localeCompare(b.name.common, 'en', { sensitivity: 'base' })
 );
+const countryOptions = nationalityCountries.map(country => ({
+  value: country.cca2,
+  label: `${country.flag} ${country.name.common}`,
+}));
 
 export default function RegisterPage() {
   const [registered, setRegistered] = useState(false);
@@ -19,6 +27,7 @@ export default function RegisterPage() {
   const [nationality, setNationality] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const nationalitySearchRef = useRef<HTMLInputElement>(null);
 
   async function handleSubmit(event: React.FormEvent) {
 
@@ -174,20 +183,33 @@ export default function RegisterPage() {
             Country of nationality
           </label>
 
-          <select
-            id="nationality"
+          <Combobox
             name="nationality"
-            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
-            value={nationality}
-            onChange={(e) => setNationality(e.target.value)}
+            items={countryOptions}
+            value={countryOptions.find(country => country.value === nationality) ?? null}
+            isItemEqualToValue={(country, selected) => country.value === selected.value}
+            onValueChange={country => setNationality(country?.value ?? '')}
+            disabled={loading}
           >
-            <option value="">Select your country</option>
-            {nationalityCountries.map(country => (
-              <option key={country.cca2} value={country.cca2}>
-                {country.flag} {country.name.common}
-              </option>
-            ))}
-          </select>
+            <ComboboxTrigger id="nationality" type="button"
+              className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm font-normal text-gray-700 hover:border-purple-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-200 disabled:cursor-not-allowed disabled:opacity-50">
+              <span className="min-w-0 truncate"><ComboboxValue placeholder="Select your country" /></span>
+            </ComboboxTrigger>
+            <ComboboxContent initialFocus={nationalitySearchRef}>
+              <ComboboxInput ref={nationalitySearchRef} aria-label="Search countries"
+                placeholder="Search countries..." showTrigger={false}
+                className="min-h-11 focus-within:border-purple-400 focus-within:ring-purple-200" />
+              <ComboboxEmpty>No countries found.</ComboboxEmpty>
+              <ComboboxList>
+                {(country: { value: string; label: string }) => (
+                  <ComboboxItem key={country.value} value={country}
+                    className="cursor-pointer data-highlighted:bg-purple-50 data-highlighted:text-purple-700">
+                    {country.label}
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
 
         </div>
 
