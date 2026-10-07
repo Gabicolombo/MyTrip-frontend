@@ -96,7 +96,7 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
   }
 
   return (
-    <div className='grid min-w-0 grid-cols-1 md:grid-cols-2 gap-4 items-start'>
+    <div className={`grid min-w-0 grid-cols-1 gap-4 items-start ${itinerary.length > 0 ? 'md:grid-cols-2' : ''}`}>
       {/**itinerary */}
 
       <ItineraryPanel
@@ -152,6 +152,7 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
       )}
 
       {/**map */}
+      {itinerary.length > 0 && (
       <div className='relative z-0 min-w-0 bg-white rounded-2xl shadow-sm overflow-hidden md:sticky md:top-6'>
         <div className="flex items-center gap-2 px-5 py-4 border-b border-gray-100">
           <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_0_3px_#D1FAE5]" />
@@ -169,6 +170,7 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
           />
         </div>
       </div>
+      )}
     </div>
   )
 

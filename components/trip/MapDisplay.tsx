@@ -12,12 +12,26 @@ const categoryIcons: Record<string, string> = {
   Hiking: '🌿',
   Culture: '⛩️',
   Park: '🏞️',
-  House: '🏖️',
+  House: '🏠',
+  Shopping: '🛍️',
+  Bar: '🍻',
   Tour: '🎟️',
   Other: '📌',
 };
 
-const customIcon = (activity: string) =>
+const colors = [
+  '#C4B5FD', 
+  '#93C5FD', 
+  '#86EFAC', 
+  '#FCD34D', 
+  '#FCA5A5', 
+  '#FBCFE8', 
+  '#1eff00',
+  '#A78BFA',
+  '#F87171',
+];
+
+const customIcon = (activity: string, color: string) =>
   L.divIcon({
     className: '',
     html: `<div style="
@@ -26,8 +40,8 @@ const customIcon = (activity: string) =>
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #cfbfebf3;
       border: 2px solid white;
+      background: ${color};
       border-radius: 50%;
       font-size: 20px;
       box-shadow: 0 2px 6px #0005;
@@ -70,8 +84,13 @@ export default function MapDisplay({ places, selectedPlaceId }: { places: Itiner
     lat: p.latitude,
     lng: p.longitude,
     name: p.name,
-    icon: p.activity
+    icon: p.activity,
+    day: p.day,
   }))
+
+  const days = [...new Set(places.map(place => place.day))].sort();
+
+  const getDayColor = (day: string) => colors[days.indexOf(day) % colors.length];
 
   const defaultCenter: [number, number] = [51.505, -0.09];
   return (
@@ -86,7 +105,7 @@ export default function MapDisplay({ places, selectedPlaceId }: { places: Itiner
       />
       <MapUpdater places={places} selectedPlaceId={selectedPlaceId} />
       {points.map((p, idx) => (
-        <Marker key={idx} position={[p.lat, p.lng]} icon={customIcon(p.icon)}>
+        <Marker key={idx} position={[p.lat, p.lng]} icon={customIcon(p.icon, getDayColor(p.day))}>
           <Popup>{p.name}</Popup>
         </Marker>
       ))}

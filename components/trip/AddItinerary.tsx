@@ -24,7 +24,9 @@ const ACTIVITIES = [
   { value: 'Hiking',      emoji: '🌿' },
   { value: 'Culture',    emoji: '⛩️' },
   { value: 'Park',    emoji: '🏞️' },
-  { value: 'House',    emoji: '🏖️' },
+  { value: 'House',    emoji: '🏠' },
+  { value: 'Shopping', emoji: '🛍️' },
+  { value: 'Bar', emoji: '🍻' },
   { value: 'Tour',        emoji: '🎟️' },
   { value: 'Other',       emoji: '📌' },
 ];

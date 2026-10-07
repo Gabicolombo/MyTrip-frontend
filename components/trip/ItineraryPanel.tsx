@@ -66,7 +66,7 @@ export default function ItineraryPanel({ city, startDate, endDate, id, places, s
           <span className="text-4xl">🗺️</span>
           <p className="font-semibold text-gray-600">No places yet</p>
           <p className="text-sm text-gray-400 max-w-[200px] leading-relaxed">
-            Add the places you want to visit in {city}
+            Add the places you want to visit in {city} to see them on the map
           </p>
           <button
             onClick={onAddPlace}
