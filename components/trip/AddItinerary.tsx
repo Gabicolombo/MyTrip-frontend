@@ -2,9 +2,10 @@
 
 import { TRIP_API_URL } from '@/lib/trip';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
 import { Itinerary } from './ItineraryPanel';
 import { searchPlaces, type PhotonPlace } from '@/lib/photon';
+import DaySelect from './DaySelect';
 
 interface ItineraryProps {
   destinationId: string;         
@@ -46,6 +47,7 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
   const [notes, setNotes] = useState(itinerary?.notes ?? '');
   const [link, setLink] = useState(itinerary?.link ?? '');
   const [loading, setLoading] = useState(false);
+  const submitting = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -56,14 +58,18 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
   const [coordsConfirmed, setCoordsConfirmed] = useState(Boolean(itinerary));
   const searchController = useRef<AbortController | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const timeButtonRef = useRef<HTMLButtonElement>(null);
+  const timePickerId = useId();
 
-  const days = [];
+  const days: string[] = [];
   const start = new Date(startDate);
   const end = new Date(endDate);
   for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
     days.push(new Date(d).toISOString().split('T')[0]);
   }
-  const [day, setDay] = useState(days[0]);
+  const [day, setDay] = useState(
+    itinerary?.day?.slice(0, 10) ?? days[0]
+  );
   // Handle place search input changes
   useEffect(() => {
 
@@ -98,12 +104,14 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
   }, [hour, minute, ampm]);
 
   useEffect(() => {
-    document.addEventListener('mousedown', (event) => {
+    function handleOutsidePointer(event: PointerEvent) {
       if (pickerRef.current && event.target && !pickerRef.current.contains(event.target as Node)) {
         setOpen(false);
       }
-    })
-  }, [])
+    }
+    document.addEventListener('pointerdown', handleOutsidePointer);
+    return () => document.removeEventListener('pointerdown', handleOutsidePointer);
+  }, []);
 
   function handleSelectSuggestion(place: PhotonPlace) {
     searchController.current?.abort();
@@ -126,6 +134,7 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (submitting.current) return;
 
     if (!coordsConfirmed || latitude === null || longitude === null) {
       displayError('Please select a place from the suggestions list.');
@@ -135,7 +144,12 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
       displayError('Please select an activity type.');
       return;
     }
+    if (!days.includes(day)) {
+      displayError('Please select a day within the destination dates.');
+      return;
+    }
 
+    submitting.current = true;
     setLoading(true);
     setError(null);
 
@@ -180,6 +194,7 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
       } catch(err: unknown) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
+      submitting.current = false;
       setLoading(false);
     }
   }
@@ -192,7 +207,7 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
         {/**header */}
         <div className='flex shrink-0 justify-between items-center px-4 sm:px-6 py-4 border-b border-gray-100'>
           <h2 className='text-lg font-semibold text-gray-800'>{isEditing ?'Update' : 'Add'} place</h2>
-          <button aria-label='Close itinerary form' onClick={onClose} className='min-h-11 min-w-11 text-gray-400 hover:text-gray-600 transition-colors'>X</button>
+          <button aria-label='Close itinerary form' disabled={loading} onClick={onClose} className='min-h-11 min-w-11 cursor-pointer text-gray-400 hover:text-gray-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50'>X</button>
         </div>
 
         {/**form */}
@@ -296,43 +311,43 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
 
           {/**day and time */}
           <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-            <div className='flex flex-col gap-1.5'>
-              <label className='text-xs font-semibold text-gray-500 uppercase tracking-wide'>Day</label>
+            <DaySelect days={days} value={day} onChange={setDay} disabled={loading} />
 
-              <select 
-                value={day}
-                onChange={(e) => setDay(e.target.value)}
-                required
-                className='rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400'
-              >
-                {days.map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </div>
-
-            <div ref={pickerRef} className='flex flex-col gap-1.5 relative'>
-              <label className='text-xs font-semibold text-gray-500 uppercase tracking-wide'>Time</label>
-              <div className='flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 
-                    px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400'>
+            <div ref={pickerRef} className='flex flex-col gap-1.5 relative'
+              onKeyDown={event => {
+                if (event.key === 'Escape' && open) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setOpen(false);
+                  timeButtonRef.current?.focus();
+                }
+              }}
+              onBlur={event => {
+                if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+              }}>
+              <label htmlFor={`${timePickerId}-button`} className='text-xs font-semibold text-gray-500 uppercase tracking-wide'>Time</label>
+              <button type="button" ref={timeButtonRef} id={`${timePickerId}-button`}
+                aria-expanded={open} aria-controls={open ? timePickerId : undefined}
+                onClick={() => setOpen(value => !value)}
+                className='flex w-full cursor-pointer items-center justify-between rounded-lg border border-gray-200 bg-gray-50
+                    px-3 py-2 text-sm text-gray-700 transition-colors hover:border-purple-400 hover:bg-purple-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400'>
                 <span>{time}</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="lucide lucide-clock2-icon lucide-clock-2 cursor-pointer"
-                      onClick={() => open ? setOpen(false): setOpen(true)}><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4-2"/></svg>
-              </div>
+                <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="lucide lucide-clock2-icon lucide-clock-2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4-2"/></svg>
+              </button>
               {open && (
-                <div className='absolute top-full left-0 right-0 mt-1 grid grid-cols-3 rounded-lg border border-gray-200 bg-gray-50 
+                <div id={timePickerId} role="group" aria-label="Choose time" className='absolute z-10 top-full left-0 right-0 mt-1 grid grid-cols-3 rounded-lg border border-gray-200 bg-gray-50
                   px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400'>
                   
                   <div className='overflow-y-auto h-44 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden' >
                     {Array.from({ length: 12}, (_, i) => {
                       const hourTime = i === 0 ? 12 : i;
                       return (
-                        <div 
+                        <button type="button" aria-label={`Hour ${hourTime}`} aria-pressed={String(hourTime) === hour}
                           key={hourTime} 
-                          className={`cursor-pointer flex items-center justify-center ${String(hourTime) === hour ? 'bg-purple-400' : 'hover:bg-gray-400'}`}
+                          className={`w-full cursor-pointer flex items-center justify-center ${String(hourTime) === hour ? 'bg-purple-400' : 'hover:bg-gray-400'}`}
                           onClick={() => setHour(String(hourTime))}>
                           {String(hourTime).padStart(2, '0')}
-                        </div>
+                        </button>
                       )
                     })}
         
@@ -342,25 +357,25 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
                       const min = i
 
                       return (
-                        <div 
+                        <button type="button" aria-label={`Minute ${String(min).padStart(2, '0')}`} aria-pressed={String(min).padStart(2, '0') === minute}
                           key={min} 
-                          className={`cursor-pointer flex items-center justify-center ${String(min).padStart(2, '0') === minute ? 'bg-purple-400' : 'hover:bg-gray-400'}`}
+                          className={`w-full cursor-pointer flex items-center justify-center ${String(min).padStart(2, '0') === minute ? 'bg-purple-400' : 'hover:bg-gray-400'}`}
                           onClick={() => setMinute(String(min))}
                         >
                           {String(min).padStart(2, '0')}
-                        </div>
+                        </button>
                       )
                     })}
                   </div>
                   <div className='overflow-y-auto h-44 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
                     {['AM', 'PM'].map((m) => (
-                      <div 
+                      <button type="button" aria-pressed={m === ampm}
                         key={m} 
-                        className={`cursor-pointer flex items-center justify-center ${m === ampm ? 'bg-purple-400' : 'hover:bg-gray-400'}`}
+                        className={`w-full cursor-pointer flex items-center justify-center ${m === ampm ? 'bg-purple-400' : 'hover:bg-gray-400'}`}
                         onClick={() => setAmpm(m)}
                       >
                         {m}
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div> 
@@ -397,16 +412,19 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
         {/**endForm */}
         <footer className='flex shrink-0 flex-wrap justify-between gap-2 border-t border-gray-100 px-4 sm:px-6 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]'>
           <button 
-            className='flex items-center gap-1 px-5 py-3 text-gray-500 font-semibold rounded-full border cursor-pointer'
+            className='flex items-center gap-1 px-5 py-3 text-gray-500 font-semibold rounded-full border cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
+            disabled={loading}
             onClick={onClose}
           >Cancel</button>
 
           <button 
-            className='flex items-center gap-1 px-5 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-full transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed'
+            className='flex items-center gap-1 px-5 py-3 bg-purple-600 enabled:hover:bg-purple-700 text-white font-semibold rounded-full transition-colors cursor-pointer disabled:bg-gray-400 disabled:cursor-wait'
             type='submit'
             form='add-itinerary'
+            disabled={loading}
+            aria-busy={loading}
           >
-            {isEditing ? 'Update' : 'Add'} Itinerary
+            {loading ? 'Saving...' : `${isEditing ? 'Update' : 'Add'} Itinerary`}
           </button>
         </footer>
 

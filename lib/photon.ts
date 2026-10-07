@@ -19,12 +19,18 @@ async function queryPhoton(params: URLSearchParams, signal: AbortSignal): Promis
   if (!response.ok) throw new Error('Place search is unavailable. Please try again.');
   const data = await response.json();
   if (!Array.isArray(data.features)) throw new Error('Invalid place search response.');
+  const seen = new Set<string>();
   return data.features.filter((place: PhotonPlace) => {
     const coordinates = place.geometry?.coordinates;
     return place.geometry?.type === 'Point' && Array.isArray(coordinates)
       && Number.isFinite(coordinates[0]) && Number.isFinite(coordinates[1])
       && Math.abs(coordinates[0]) <= 180 && Math.abs(coordinates[1]) <= 90
       && Boolean(place.properties?.name || place.properties?.street);
+  }).filter((place: PhotonPlace) => {
+    const key = `${place.properties.osm_type}-${place.properties.osm_id}-${place.geometry.coordinates.join(',')}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
 }
 
