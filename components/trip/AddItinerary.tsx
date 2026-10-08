@@ -244,6 +244,7 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
                   {suggestions.map((place) => {
                     const { properties } = place;
                     const name = properties.name || properties.street;
+                    const streetAddress = [properties.street, properties.housenumber].filter(Boolean).join(', ');
                     const address = [...new Set([properties.city, properties.state, properties.country].filter(Boolean))].join(', ');
 
                     return (
@@ -252,8 +253,9 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
                       >
                         <button type="button" onClick={() => handleSelectSuggestion(place)} className="flex w-full items-start gap-2 px-3 py-2.5 text-left hover:bg-purple-50 focus:bg-purple-50">
                         <span className="text-purple-400 mt-0.5">📍</span>
-                        <div>
+                        <div className="min-w-0 break-words">
                           <p className="text-sm font-medium text-gray-800">{name}</p>
+                          {streetAddress && <p className="text-xs text-gray-600">{streetAddress}</p>}
                           <p className="text-xs text-gray-400">{address}</p>
                         </div>
                         </button>

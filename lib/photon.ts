@@ -5,6 +5,7 @@ export interface PhotonPlace {
     osm_id?: number;
     name?: string;
     street?: string;
+    housenumber?: string;
     city?: string;
     state?: string;
     country?: string;
@@ -50,7 +51,7 @@ export async function searchPlaces(text: string, city: string, country: string, 
       // A failed city lookup should not prevent searching for the place itself.
     }
   }
-  const params = new URLSearchParams({ q: text, limit: '5' });
+  const params = new URLSearchParams({ q: text, limit: '10' });
   if (center) {
     params.set('lon', String(center[0]));
     params.set('lat', String(center[1]));
