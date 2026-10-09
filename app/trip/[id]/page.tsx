@@ -10,6 +10,7 @@ import TripHeader from '@/components/trip/TripHeader';
 import TripInfo from '@/components/trip/sidebar/TripInfo';
 import DestinationTabs from '@/components/trip/DestinationTabs';
 import VisaCheck from '@/components/trip/sidebar/VisaCheck';
+import BudgetModal from '@/components/trip/BudgetModal';
 
 const TRIP_DETAILS_QUERY = `
   query tripDetails($id: Int!) {
@@ -66,6 +67,7 @@ export default function TripDetailsPage() {
 
   const { id } = useParams();
   const [editingTrip, setEditingTrip] = useState(false);
+  const [budgetOpen, setBudgetOpen] = useState(false);
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [activeTab, setActiveTab] = useState('');
   const [trip, setTrip] = useState<TripDetails | null>(null);
@@ -141,7 +143,9 @@ export default function TripDetailsPage() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onEdit={() => setEditingTrip(true)}
+        onBudget={() => setBudgetOpen(true)}
       />
+      {budgetOpen && <BudgetModal tripId={trip.id} tripTitle={trip.title} destinations={trip.destinations} onClose={() => setBudgetOpen(false)} />}
       <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px] gap-6 items-start">
       
         {/*itinerary later*/}

@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { formatDate } from '@/lib/utils';
-import { ArrowLeft, Pencil } from 'lucide-react';
+import { ArrowLeft, Pencil, Wallet } from 'lucide-react';
 
 interface Destination {
   city: string;
@@ -26,6 +26,7 @@ interface TripHeroProps {
   activeTab: string;
   onTabChange: (city: string) => void;
   onEdit: () => void;
+  onBudget: () => void;
 }
 
 const countryFlag: Record<string, string> = {
@@ -46,7 +47,7 @@ const totalDays = (startDate: string, endDate: string) => {
   )
 }
 
-export default function TripHeader({ trip, isCompleted, activeTab, onTabChange, onEdit }: TripHeroProps) {
+export default function TripHeader({ trip, isCompleted, activeTab, onTabChange, onEdit, onBudget }: TripHeroProps) {
   const router = useRouter();
 
   const total = totalDays(trip.startDate, trip.endDate);
@@ -89,6 +90,9 @@ export default function TripHeader({ trip, isCompleted, activeTab, onTabChange, 
 
                 <button onClick={onEdit} className="flex min-h-11 items-center gap-2 text-sm text-purple-700 font-semibold px-4 py-2 rounded-xl bg-purple-50 border border-purple-200 hover:bg-purple-100 transition-colors">
                   <Pencil size={16} /> Edit trip
+                </button>
+                <button type="button" onClick={onBudget} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-700">
+                  <Wallet size={16} /> Budget
                 </button>
               </div>
             </div>
