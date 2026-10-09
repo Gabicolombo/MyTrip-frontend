@@ -6,6 +6,17 @@ import { useState, useRef, useEffect, useId } from 'react';
 import { Itinerary } from './ItineraryPanel';
 import { searchPlaces, type PhotonPlace } from '@/lib/photon';
 import DaySelect from './DaySelect';
+import countriesData from 'world-countries';
+import { itineraryCost } from '@/lib/itinerary-cost';
+import {
+  Combobox, ComboboxTrigger, ComboboxValue, ComboboxInput,
+  ComboboxContent, ComboboxList, ComboboxItem, ComboboxEmpty,
+} from '@/components/ui/combobox';
+
+const currencyNames = new Intl.DisplayNames(['en'], { type: 'currency' });
+const currencies = [...new Set(['USD', ...countriesData.flatMap(country => Object.keys(country.currencies))])]
+  .sort()
+  .map(code => ({ value: code, label: `${code} — ${currencyNames.of(code) || code}` }));
 
 interface ItineraryProps {
   destinationId: string;         
@@ -46,6 +57,12 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
   const [longitude, setLongitude] = useState<number | null>(itinerary?.longitude ?? null);
   const [notes, setNotes] = useState(itinerary?.notes ?? '');
   const [link, setLink] = useState(itinerary?.link ?? '');
+  const [amount, setAmount] = useState(itinerary?.amount == null ? '' : String(itinerary.amount));
+  const [currency, setCurrency] = useState(itinerary?.currency ?? '');
+  const currencySearchRef = useRef<HTMLInputElement>(null);
+  const expenseId = useId();
+  const selectedCurrency = currencies.find(option => option.value === currency)
+    ?? (currency ? { value: currency, label: currency } : null);
   const [loading, setLoading] = useState(false);
   const submitting = useRef(false);
   const [error, setError] = useState<string | null>(null);
@@ -149,6 +166,14 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
       return;
     }
 
+    let cost: ReturnType<typeof itineraryCost>;
+    try {
+      cost = itineraryCost(amount, currency);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Please check the expense fields.');
+      return;
+    }
+
     submitting.current = true;
     setLoading(true);
     setError(null);
@@ -164,6 +189,7 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
           longitude,
           notes: notes || null,
           link: link || null,
+          ...cost,
       });
       let res: Response;
       const headers = {
@@ -386,6 +412,43 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
                 
             </div>
             
+            <fieldset disabled={loading} className="min-w-0 space-y-3 disabled:opacity-50">
+              <legend className="text-xs font-bold uppercase tracking-wide text-gray-500">Expense (optional)</legend>
+              <p id={`${expenseId}-help`} className="text-xs text-gray-500">Enter the amount spent at this place and select its currency, or leave both blank.</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <label htmlFor={`${expenseId}-amount`} className="text-xs font-semibold uppercase tracking-wide text-gray-500">Amount</label>
+                  <input id={`${expenseId}-amount`} name="amount" type="text" inputMode="decimal"
+                    value={amount} onChange={event => setAmount(event.target.value)} placeholder="e.g. 40.00"
+                    aria-describedby={`${expenseId}-help`}
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-400" />
+                </div>
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <label htmlFor={`${expenseId}-currency`} className="text-xs font-semibold uppercase tracking-wide text-gray-500">Currency</label>
+                  <Combobox items={currencies} value={selectedCurrency} disabled={loading}
+                    isItemEqualToValue={(option, selected) => option.value === selected.value}
+                    onValueChange={option => setCurrency(option?.value ?? '')}>
+                    <ComboboxTrigger id={`${expenseId}-currency`} type="button"
+                      className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-left text-sm text-gray-700 hover:border-purple-400 focus-visible:ring-2 focus-visible:ring-purple-400 disabled:cursor-not-allowed">
+                      <span className="min-w-0 truncate"><ComboboxValue placeholder="Select currency" /></span>
+                    </ComboboxTrigger>
+                    <ComboboxContent initialFocus={currencySearchRef}>
+                      <ComboboxInput ref={currencySearchRef} aria-label="Search currencies" placeholder="Search currencies..." showTrigger={false} />
+                      <ComboboxEmpty>No currencies found.</ComboboxEmpty>
+                      <ComboboxList>
+                        {(option: { value: string; label: string }) => (
+                          <ComboboxItem key={option.value} value={option} className="cursor-pointer data-highlighted:bg-purple-50 data-highlighted:text-purple-700">{option.label}</ComboboxItem>
+                        )}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+                </div>
+              </div>
+              {(amount !== '' || currency !== '') && <button type="button"
+                onClick={() => { setAmount(''); setCurrency(''); setError(null); }}
+                className="cursor-pointer text-sm text-purple-600 hover:underline disabled:cursor-not-allowed">Clear expense</button>}
+            </fieldset>
+
             {/**notes */}
             <div className='flex flex-col gap-2.5'>
               <label className='text-xs font-bold text-gray-500 uppercase tracking-wide'>Notes</label>

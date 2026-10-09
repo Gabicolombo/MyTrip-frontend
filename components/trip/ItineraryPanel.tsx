@@ -13,6 +13,8 @@ export interface Itinerary {
   longitude: number;
   notes: string | null;
   link: string | null;
+  amount?: string | null;
+  currency?: string | null;
 }
 
 interface ItineraryPanelProps {
