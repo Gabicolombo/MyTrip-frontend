@@ -35,6 +35,8 @@ interface Itinerary {
   longitude: number;
   notes: string | null;
   link: string | null;
+  amount?: string | null;
+  currency?: string | null;
 }
 
 export default function DestinationTabs({ destinations, activeTab }: DestinationTabsProps) {
@@ -61,6 +63,7 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
         headers: getHeaders()
       });
       const data = await res.json();
+      console.log(data)
       setItinerary(data);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
