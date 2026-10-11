@@ -25,12 +25,13 @@ interface ItineraryPanelProps {
   places: Itinerary[];
   selectedPlace: string | null;
   onSelectPlace: (placeId: string) => void;
+  canEdit: boolean;
   onAddPlace: () => void;
   onEditPlace: (place: Itinerary) => void;
   onDeletePlace: (place: Itinerary) => void;
 }
 
-export default function ItineraryPanel({ city, startDate, endDate, id, places, selectedPlace, onSelectPlace, onAddPlace, onEditPlace, onDeletePlace }: ItineraryPanelProps) {
+export default function ItineraryPanel({ city, startDate, endDate, id, places, selectedPlace, onSelectPlace, canEdit, onAddPlace, onEditPlace, onDeletePlace }: ItineraryPanelProps) {
   // we need to group by day
   const groupedByDay = places.reduce((acc, place) => {
     if (!acc[place.day]) {
@@ -54,8 +55,8 @@ export default function ItineraryPanel({ city, startDate, endDate, id, places, s
           </span>
           {
             places.length > 0 && (
-              <button onClick={onAddPlace}
-                className='flex items-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-full transaction-colors'>
+              <button onClick={onAddPlace} disabled={!canEdit} title={canEdit ? undefined : "Viewers can't add places"}
+                className='flex items-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-full transaction-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-purple-600'>
                 + Add
               </button>
             )
@@ -72,7 +73,9 @@ export default function ItineraryPanel({ city, startDate, endDate, id, places, s
           </p>
           <button
             onClick={onAddPlace}
-            className="mt-2 px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-full transition-colors"
+            disabled={!canEdit}
+            title={canEdit ? undefined : "Viewers can't add places"}
+            className="mt-2 px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-purple-600"
           >
             + Add first place
           </button>

@@ -41,7 +41,9 @@ export default function LoginPage() {
 
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('name', data.name);
-      router.push('/home');
+      const next = new URLSearchParams(window.location.search).get('next') ?? localStorage.getItem('pendingInvite');
+      localStorage.removeItem('pendingInvite');
+      router.push(next && /^\/(?![/\\])/.test(next) ? next : '/home');
     } catch (error: unknown) {
       if (error instanceof Error) {
         setError(error.message);

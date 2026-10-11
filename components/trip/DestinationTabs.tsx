@@ -23,6 +23,7 @@ interface Destination {
 interface DestinationTabsProps {
   destinations: Destination[];
   activeTab: string;
+  canEdit: boolean;
 }
 
 interface Itinerary {
@@ -39,7 +40,7 @@ interface Itinerary {
   currency?: string | null;
 }
 
-export default function DestinationTabs({ destinations, activeTab }: DestinationTabsProps) {
+export default function DestinationTabs({ destinations, activeTab, canEdit }: DestinationTabsProps) {
   const [editingItinerary, setEditingItinerary] = useState<Itinerary | null>(null);  
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -103,6 +104,7 @@ export default function DestinationTabs({ destinations, activeTab }: Destination
       {/**itinerary */}
 
       <ItineraryPanel
+        canEdit={canEdit}
         city={activeDestination.city}
         startDate={activeDestination.startDate}
         endDate={activeDestination.endDate}
