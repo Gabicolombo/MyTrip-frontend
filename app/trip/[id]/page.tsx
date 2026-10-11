@@ -1,6 +1,7 @@
 'use client';
 
 import { TRIP_API_URL } from '@/lib/trip';
+import { getCurrentUserId } from '@/lib/auth';
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
@@ -10,6 +11,7 @@ import TripHeader from '@/components/trip/TripHeader';
 import TripInfo from '@/components/trip/sidebar/TripInfo';
 import DestinationTabs from '@/components/trip/DestinationTabs';
 import VisaCheck from '@/components/trip/sidebar/VisaCheck';
+import Participants from '@/components/trip/sidebar/Participants';
 import BudgetModal from '@/components/trip/BudgetModal';
 
 const TRIP_DETAILS_QUERY = `
@@ -22,6 +24,7 @@ const TRIP_DETAILS_QUERY = `
       endDate
       imageUrl
       participants {
+        userId
         user {
           name
         }
@@ -48,6 +51,7 @@ interface Destination {
 }
 
 interface Participant {
+  userId: number;
   user: {name: string};
   role: string;
 }
@@ -126,6 +130,8 @@ export default function TripDetailsPage() {
   }
 
   const isCompleted = new Date(trip.endDate).getTime() < new Date().getTime();
+  const currentUserId = getCurrentUserId();
+  const canEdit = trip.participants.some(participant => participant.userId === currentUserId && participant.role !== 'VIEWER');
 
   return (
     <main className="min-h-dvh bg-gray-50">
@@ -152,6 +158,7 @@ export default function TripDetailsPage() {
         <DestinationTabs
             destinations={trip.destinations}
             activeTab={activeTab}
+            canEdit={canEdit}
         />
         {/*sidebar*/}
 
@@ -161,11 +168,11 @@ export default function TripDetailsPage() {
             checkOut={trip.endDate}
             status={isCompleted ? 'Completed' : 'Upcoming'}
           />
-          {/* Participants later */}
 
           <VisaCheck
             destinations={trip.destinations.map(d => d.country)}
           />
+          <Participants tripId={trip.id} participants={trip.participants} onRemoved={() => setRefreshVersion(version => version + 1)} />
         </div>
       </div>
     </main>
