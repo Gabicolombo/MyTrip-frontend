@@ -134,7 +134,7 @@ describe('Participants', () => {
       expect(url).toBe('http://localhost:4000/trips/update-participant-role/7/3');
       expect(init?.method).toBe('PATCH');
       expect(init?.headers).toMatchObject({ Authorization: `Bearer ${session}` });
-      expect(requestBody(fetchMock)).toEqual({ role: 'EDITOR' });
+      expect(requestBody(fetchMock)).toEqual({ newRole: 'EDITOR' });
       expect(onChanged).toHaveBeenCalledTimes(1);
     });
 

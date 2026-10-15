@@ -34,7 +34,7 @@ describe('ItineraryPanel', () => {
     const row = screen.getByText('Vatican').closest('.itinerary-plan') as HTMLElement;
     expect(within(row).getByText('C')).toBeInTheDocument();
     expect(within(row).getByText('10:15')).toBeInTheDocument();
-    expect(within(row).getByRole('link', { name: 'Get directions' }))
+    expect(within(row).getByRole('link', { name: 'Directions🔗' }))
       .toHaveAttribute('href', expect.stringContaining('destination=41.9,12.49'));
   });
 
