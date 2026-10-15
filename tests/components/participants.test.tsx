@@ -12,9 +12,15 @@ const participants = [
 
 function open(currentUserId: number | null, list = participants) {
   const session = currentUserId === null ? null : signIn(currentUserId);
-  const onRemoved = vi.fn();
-  render(<Participants tripId={7} participants={list} onRemoved={onRemoved} />);
-  return { session, onRemoved };
+  const onChanged = vi.fn();
+  render(<Participants tripId={7} participants={list} onChanged={onChanged} />);
+  return { session, onChanged };
+}
+
+async function changeRole(name: string, role: 'Editor' | 'Viewer') {
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('button', { name: `Change role of ${name}` }));
+  await user.click(await screen.findByRole('menuitemradio', { name: role }));
 }
 
 async function invite(email: string, role?: 'Editor') {
@@ -97,6 +103,53 @@ describe('Participants', () => {
     });
   });
 
+  describe('changing roles', () => {
+    it('lets only the owner change roles, and never the owner row, next to the remove button', () => {
+      open(1);
+      expect(screen.getByRole('button', { name: 'Change role of Ana' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Change role of Leo' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Change role of Gabi' })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Remove Leo' })).toBeInTheDocument();
+    });
+
+    it('marks the current role in the menu', async () => {
+      open(1);
+      await userEvent.click(screen.getByRole('button', { name: 'Change role of Ana' }));
+      expect(await screen.findByRole('menuitemradio', { name: 'Editor' })).toHaveAttribute('aria-checked', 'true');
+      expect(screen.getByRole('menuitemradio', { name: 'Viewer' })).toHaveAttribute('aria-checked', 'false');
+    });
+
+    it.each<[number | null, string]>([[2, 'editor'], [3, 'viewer'], [null, 'signed-out visitor']])('hides role changes from user %s (%s)', id => {
+      open(id);
+      expect(screen.queryByRole('button', { name: /^Change role of/ })).not.toBeInTheDocument();
+    });
+
+    it('updates the role and refreshes the trip', async () => {
+      const fetchMock = mockFetch(() => json(true));
+      const { session, onChanged } = open(1);
+      await changeRole('Leo', 'Editor');
+
+      expect(await screen.findByRole('status')).toHaveTextContent('Leo is now Editor.');
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe('http://localhost:4000/trips/update-participant-role/7/3');
+      expect(init?.method).toBe('PATCH');
+      expect(init?.headers).toMatchObject({ Authorization: `Bearer ${session}` });
+      expect(requestBody(fetchMock)).toEqual({ role: 'EDITOR' });
+      expect(onChanged).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+      [401, 'You do not have permission to change roles.'],
+      [500, 'Unable to change the role. Please try again.'],
+    ])('explains a %i failure', async (status, message) => {
+      mockFetch(() => json({ message: 'nope' }, status));
+      const { onChanged } = open(1);
+      await changeRole('Ana', 'Viewer');
+      expect(await screen.findByRole('alert')).toHaveTextContent(message);
+      expect(onChanged).not.toHaveBeenCalled();
+    });
+  });
+
   describe('removing', () => {
     it('lets only the owner remove, and never the owner row', () => {
       open(1);
@@ -112,7 +165,7 @@ describe('Participants', () => {
 
     it('removes a participant after confirmation and refreshes the trip', async () => {
       const fetchMock = mockFetch(() => json(true));
-      const { session, onRemoved } = open(1);
+      const { session, onChanged } = open(1);
       await userEvent.click(screen.getByRole('button', { name: 'Remove Leo' }));
       expect(screen.getByText('Remove Leo from this trip?')).toBeInTheDocument();
       expect(fetchMock).not.toHaveBeenCalled();
@@ -123,17 +176,17 @@ describe('Participants', () => {
       expect(url).toBe('http://localhost:4000/trips/delete-participant/7/3');
       expect(init?.method).toBe('DELETE');
       expect(init?.headers).toMatchObject({ Authorization: `Bearer ${session}` });
-      expect(onRemoved).toHaveBeenCalledTimes(1);
+      expect(onChanged).toHaveBeenCalledTimes(1);
     });
 
     it('does nothing when the confirmation is cancelled', async () => {
       const fetchMock = mockFetch(() => json(true));
-      const { onRemoved } = open(1);
+      const { onChanged } = open(1);
       await userEvent.click(screen.getByRole('button', { name: 'Remove Ana' }));
       await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
       expect(screen.queryByText('Remove Ana from this trip?')).not.toBeInTheDocument();
       expect(fetchMock).not.toHaveBeenCalled();
-      expect(onRemoved).not.toHaveBeenCalled();
+      expect(onChanged).not.toHaveBeenCalled();
     });
 
     it.each([
@@ -141,11 +194,11 @@ describe('Participants', () => {
       [500, 'Unable to remove the participant. Please try again.'],
     ])('explains a %i failure and keeps the list', async (status, message) => {
       mockFetch(() => json({ message: 'nope' }, status));
-      const { onRemoved } = open(1);
+      const { onChanged } = open(1);
       await userEvent.click(screen.getByRole('button', { name: 'Remove Ana' }));
       await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
       expect(await screen.findByRole('alert')).toHaveTextContent(message);
-      expect(onRemoved).not.toHaveBeenCalled();
+      expect(onChanged).not.toHaveBeenCalled();
       expect(within(screen.getByRole('list')).getByText('Ana')).toBeInTheDocument();
     });
   });

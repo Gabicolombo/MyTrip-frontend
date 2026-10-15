@@ -172,7 +172,7 @@ export default function TripDetailsPage() {
           <VisaCheck
             destinations={trip.destinations.map(d => d.country)}
           />
-          <Participants tripId={trip.id} participants={trip.participants} onRemoved={() => setRefreshVersion(version => version + 1)} />
+          <Participants tripId={trip.id} participants={trip.participants} onChanged={() => setRefreshVersion(version => version + 1)} />
         </div>
       </div>
     </main>

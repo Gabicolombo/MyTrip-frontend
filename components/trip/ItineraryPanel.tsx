@@ -122,7 +122,7 @@ export default function ItineraryPanel({ city, startDate, endDate, id, places, s
 
                   {/* maps link by your location */}
                   <a href={`https://www.google.com/maps/dir/?api=1&origin=My+Location&destination=${place.latitude},${place.longitude}`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">
-                    Get directions
+                    Directions🔗
                   </a>
 
                   {/**edit button */}

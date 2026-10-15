@@ -6,7 +6,7 @@ import DestinationTabs from '@/components/trip/DestinationTabs';
 import { searchPlaces } from '@/lib/photon';
 import { json, mockFetch, requestBody, signIn } from '../helpers';
 
-vi.mock('@/lib/photon', () => ({ searchPlaces: vi.fn() }));
+vi.mock('@/lib/photon', () => ({ searchPlaces: vi.fn(), prefetchCity: vi.fn() }));
 const search = vi.mocked(searchPlaces);
 
 const colosseum = {

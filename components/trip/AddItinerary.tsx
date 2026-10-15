@@ -4,7 +4,7 @@ import { TRIP_API_URL } from '@/lib/trip';
 
 import { useState, useRef, useEffect, useId } from 'react';
 import { Itinerary } from './ItineraryPanel';
-import { searchPlaces, type PhotonPlace } from '@/lib/photon';
+import { prefetchCity, searchPlaces, type PhotonPlace } from '@/lib/photon';
 import DaySelect from './DaySelect';
 import countriesData from 'world-countries';
 import { itineraryCost } from '@/lib/itinerary-cost';
@@ -87,6 +87,10 @@ export default function AddItinerary({ destinationId, city, country, startDate, 
   const [day, setDay] = useState(
     itinerary?.day?.slice(0, 10) ?? days[0]
   );
+  useEffect(() => {
+    prefetchCity(city, country);
+  }, [city, country]);
+
   // Handle place search input changes
   useEffect(() => {
 

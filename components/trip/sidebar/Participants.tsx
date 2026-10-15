@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef, useState, type FormEvent } from 'react';
-import { Users, UserPlus, X } from 'lucide-react';
+import { Check, Pencil, Users, UserPlus, X } from 'lucide-react';
+import { Menu } from '@base-ui/react/menu';
 import ConfirmModal from '@/components/common/confirmModal';
 import { TRIP_API_URL } from '@/lib/trip';
 import { getCurrentUserId } from '@/lib/auth';
@@ -9,7 +10,7 @@ import { getCurrentUserId } from '@/lib/auth';
 interface ParticipantsProps {
   tripId: number;
   participants: Participant[];
-  onRemoved: () => void;
+  onChanged: () => void;
 }
 
 interface Participant {
@@ -24,7 +25,7 @@ const roleLabels: Record<string, string> = {
   VIEWER: 'Viewer',
 };
 
-export default function Participants({ tripId, participants, onRemoved }: ParticipantsProps) {
+export default function Participants({ tripId, participants, onChanged }: ParticipantsProps) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'EDITOR' | 'VIEWER'>('VIEWER');
@@ -34,6 +35,7 @@ export default function Participants({ tripId, participants, onRemoved }: Partic
   const [success, setSuccess] = useState<string | null>(null);
   const [removing, setRemoving] = useState<Participant | null>(null);
   const [removingId, setRemovingId] = useState<number | null>(null);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [currentUserId] = useState(getCurrentUserId);
   const myRole = participants.find(participant => participant.userId === currentUserId)?.role;
   const isOwner = myRole === 'OWNER';
@@ -61,11 +63,44 @@ export default function Participants({ tripId, participants, onRemoved }: Partic
           : 'Unable to remove the participant. Please try again.');
       }
       setSuccess(`${participant.user.name} was removed from the trip.`);
-      onRemoved();
+      onChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to remove the participant. Please try again.');
     } finally {
       setRemovingId(null);
+    }
+  }
+
+  async function handleRoleChange(participant: Participant, newRole: 'EDITOR' | 'VIEWER') {
+    if (updatingId !== null || newRole === participant.role) return;
+    setError(null);
+    setSuccess(null);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('Please sign in to change roles.');
+      return;
+    }
+    setUpdatingId(participant.userId);
+    try {
+      const response = await fetch(`${TRIP_API_URL}/trips/update-participant-role/${tripId}/${participant.userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ newRole }),
+      });
+      if (!response.ok) {
+        throw new Error(response.status === 401
+          ? 'You do not have permission to change roles.'
+          : 'Unable to change the role. Please try again.');
+      }
+      setSuccess(`${participant.user.name} is now ${roleLabels[newRole]}.`);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to change the role. Please try again.');
+    } finally {
+      setUpdatingId(null);
     }
   }
 
@@ -128,6 +163,32 @@ export default function Participants({ tripId, participants, onRemoved }: Partic
                 <span className="shrink-0 rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-500">
                   {roleLabels[participant.role] ?? participant.role}
                 </span>
+                {isOwner && participant.role !== 'OWNER' && (
+                  <Menu.Root>
+                    <Menu.Trigger disabled={updatingId !== null} aria-label={`Change role of ${participant.user.name}`}
+                      className="flex size-8 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-purple-50 hover:text-purple-600 data-popup-open:bg-purple-50 data-popup-open:text-purple-600 disabled:opacity-50">
+                      <Pencil size={14} aria-hidden="true" />
+                    </Menu.Trigger>
+                    <Menu.Portal>
+                      <Menu.Positioner side="bottom" align="end" sideOffset={4} className="z-50">
+                        <Menu.Popup className="min-w-32 rounded-xl bg-white p-1 shadow-lg ring-1 ring-gray-100 outline-none">
+                          <Menu.RadioGroup value={participant.role}
+                            onValueChange={value => handleRoleChange(participant, value === 'EDITOR' ? 'EDITOR' : 'VIEWER')}>
+                            {(['EDITOR', 'VIEWER'] as const).map(option => (
+                              <Menu.RadioItem key={option} value={option}
+                                className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-highlighted:bg-purple-50 data-highlighted:text-purple-700">
+                                {roleLabels[option]}
+                                <Menu.RadioItemIndicator>
+                                  <Check size={14} aria-hidden="true" className="text-purple-600" />
+                                </Menu.RadioItemIndicator>
+                              </Menu.RadioItem>
+                            ))}
+                          </Menu.RadioGroup>
+                        </Menu.Popup>
+                      </Menu.Positioner>
+                    </Menu.Portal>
+                  </Menu.Root>
+                )}
                 {isOwner && participant.role !== 'OWNER' && (
                   <button type="button" disabled={removingId !== null} aria-label={`Remove ${participant.user.name}`}
                     onClick={() => setRemoving(participant)}

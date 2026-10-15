@@ -2,14 +2,73 @@
 
 import { TRIP_API_URL } from '@/lib/trip';
 
-import { useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import countriesData from 'world-countries';
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+  ComboboxTrigger,
+  ComboboxValue,
+} from '@/components/ui/combobox';
+
+const countryNames = [...countriesData]
+  .map(country => country.name.common)
+  .sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
 
 interface Destination {
   city: string;
   country: string;
   startDate: string;
   endDate: string;
+}
+
+interface CountrySelectProps {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function CountrySelect({ id, value, onChange }: CountrySelectProps) {
+  const countrySearchRef = useRef<HTMLInputElement>(null);
+  const items = value && !countryNames.includes(value) ? [value, ...countryNames] : countryNames;
+
+  return (
+    <Combobox
+      items={items}
+      value={value || null}
+      onValueChange={country => onChange(country ?? '')}
+    >
+      <ComboboxTrigger
+        id={id}
+        className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <span className="min-w-0 truncate">
+          <ComboboxValue placeholder="Select country..." />
+        </span>
+      </ComboboxTrigger>
+      <ComboboxContent initialFocus={countrySearchRef}>
+        <ComboboxInput
+          ref={countrySearchRef}
+          aria-label="Search countries"
+          placeholder="Search countries..."
+          showTrigger={false}
+          className="min-h-11 focus-within:border-purple-400 focus-within:ring-purple-200"
+        />
+        <ComboboxEmpty>No countries found.</ComboboxEmpty>
+        <ComboboxList>
+          {(country: string) => (
+            <ComboboxItem key={country} value={country} className="cursor-pointer data-highlighted:bg-purple-50 data-highlighted:text-purple-700">
+              {country}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  );
 }
 
 interface AddDestinationsModalProps {
@@ -30,28 +89,14 @@ export default function AddDestinationsModal({ tripId, destination, onClose, onS
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [countries, setCountries] = useState<string[]>([]);
-  const [loadingCountries, setLoadingCountries] = useState(true);
-
-  useEffect(() => {
-      async function fetchCountries() {
-        try {
-          const countryNames = countriesData
-            .map((c) => c.name.common)
-            .sort();
-          setCountries(countryNames);
-        } catch (err) {
-          console.error('Failed to fetch countries', err);
-        } finally {
-          setLoadingCountries(false);
-        }
-      }
-      fetchCountries();
-    }, []);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (loading) return;
+    if (destinations.some(dest => !dest.country)) {
+      setError('Please select a country for every destination.');
+      return;
+    }
     setLoading(true);
     setError(null);
 
@@ -145,24 +190,12 @@ export default function AddDestinationsModal({ tripId, destination, onClose, onS
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-gray-500 uppercase">Country</label>
-                  <select
+                  <label htmlFor={`destination-country-${index}`} className="mb-1 block text-xs font-semibold text-gray-500 uppercase">Country</label>
+                  <CountrySelect
+                    id={`destination-country-${index}`}
                     value={dest.country}
-                    onChange={(e) => updateDestination(index, 'country', e.target.value)}
-                    required
-                    disabled={loadingCountries}
-                    className="w-full rounded-lg border text-sm text-gray-500 border-gray-200 bg-white px-3 py-2 focus:ring-2 focus:ring-purple-400 focus:outline-none disabled:opacity-50"
-                  >
-                    <option value="">
-                      {loadingCountries ? 'Loading...' : 'Select country...'}
-                    </option>
-                    {dest.country && !countries.includes(dest.country) && (
-                      <option value={dest.country}>{dest.country}</option>
-                    )}
-                    {countries.map(c => (
-                      <option key={c} value={c}>{c}</option> 
-                    ))}
-                  </select>
+                    onChange={(country) => updateDestination(index, 'country', country)}
+                  />
                 </div>
               </div>
 

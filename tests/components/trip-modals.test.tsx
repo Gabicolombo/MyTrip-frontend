@@ -125,6 +125,13 @@ describe('AddDestinationsModal', () => {
     return { session, onClose, onSuccess, ...view };
   }
 
+  async function chooseCountry(index: number, country: string) {
+    const user = userEvent.setup();
+    await user.click(screen.getAllByLabelText('Country')[index]);
+    await user.type(await screen.findByRole('combobox', { name: 'Search countries' }), country);
+    await user.click(await screen.findByRole('option', { name: country }));
+  }
+
   it('adds several destinations in order', async () => {
     const fetchMock = mockFetch(() => json({}, 201));
     const { session, onClose, onSuccess, container } = open();
@@ -138,9 +145,8 @@ describe('AddDestinationsModal', () => {
     const cities = screen.getAllByPlaceholderText('e.g. Rome');
     await userEvent.type(cities[0], 'Rome');
     await userEvent.type(cities[1], 'Paris');
-    const countries = screen.getAllByRole('combobox');
-    await userEvent.selectOptions(countries[0], 'Italy');
-    await userEvent.selectOptions(countries[1], 'France');
+    await chooseCountry(0, 'Italy');
+    await chooseCountry(1, 'France');
     setDates(container, '2026-06-01', '2026-06-04', '2026-06-04', '2026-06-08');
     await userEvent.click(screen.getByRole('button', { name: /Save destinations/ }));
 
@@ -176,6 +182,16 @@ describe('AddDestinationsModal', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('http://localhost:4000/trips/update-destination/d1');
     expect(fetchMock.mock.calls[0][1]?.method).toBe('PATCH');
     expect(requestBody(fetchMock)).toEqual({ city: 'Florence', country: 'Italy', startDate: '2026-06-01', endDate: '2026-06-04' });
+  });
+
+  it('asks for a country before saving', async () => {
+    const fetchMock = mockFetch(() => json({}, 201));
+    const { container } = open();
+    await userEvent.type(screen.getByPlaceholderText('e.g. Rome'), 'Rome');
+    setDates(container, '2026-06-01', '2026-06-04');
+    await userEvent.click(screen.getByRole('button', { name: /Save destinations/ }));
+    expect(await screen.findByText('Please select a country for every destination.')).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('shows the API error and stays open', async () => {
