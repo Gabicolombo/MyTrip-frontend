@@ -64,7 +64,6 @@ export default function DestinationTabs({ destinations, activeTab, canEdit }: De
         headers: getHeaders()
       });
       const data = await res.json();
-      console.log(data)
       setItinerary(data);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
