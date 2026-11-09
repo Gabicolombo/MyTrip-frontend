@@ -1,3 +1,10 @@
+import countriesData from 'world-countries';
+
+const currencyNames = new Intl.DisplayNames(['en'], { type: 'currency' });
+export const currencies = [...new Set(['USD', ...countriesData.flatMap(country => Object.keys(country.currencies))])]
+  .sort()
+  .map(code => ({ value: code, label: `${code} — ${currencyNames.of(code) || code}` }));
+
 export function itineraryCost(amount: string, currency: string) {
   const value = amount.trim();
   if (!value) {
