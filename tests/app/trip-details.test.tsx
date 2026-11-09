@@ -141,4 +141,47 @@ describe('trip details page', () => {
     await vi.waitFor(() => expect(graphqlCalls(fetchMock)).toHaveLength(2));
     expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/trips/delete-participant/7/3'))).toBe(true);
   });
+
+  describe('transport', () => {
+    const train = {
+      id: 't1', mode: 'TRAIN', fromDestinationId: 'd1', toDestinationId: 'd2',
+      departureDate: '2099-06-05', departureTime: '09:10', arrivalDate: '2099-06-05', arrivalTime: '12:15',
+      carrier: 'Trenitalia FR 9521', reference: null, amount: '89.90', currency: 'EUR',
+    };
+    const transportCalls = (mock: ReturnType<typeof mockFetch>, method?: string) => mock.mock.calls
+      .filter(([url, init]) => String(url).includes('/trips/7/transports') && (init?.method ?? 'GET') === (method ?? 'GET'));
+
+    it('opens the transport form from the + between destinations', async () => {
+      api();
+      open(1);
+      await userEvent.click(await screen.findByRole('button', { name: 'Add transport' }));
+      expect(screen.getByRole('heading', { name: 'Add transport' })).toBeInTheDocument();
+      expect(screen.getByText('→').closest('p')).toHaveTextContent('Rome → Paris');
+      await userEvent.click(screen.getByRole('button', { name: 'Close transport form' }));
+      expect(screen.queryByRole('heading', { name: 'Add transport' })).not.toBeInTheDocument();
+    });
+
+    it('loads the legs and reloads them after one is deleted', async () => {
+      const fetchMock = mockFetch((url, init) => {
+        if (url.endsWith('/graphql')) return json({ data: { tripDetails: trip } });
+        if (url.endsWith('/trips/7/transports')) return json([train]);
+        if (init.method === 'DELETE') return json(true);
+        return json([]);
+      });
+      open(1);
+      await userEvent.click(await screen.findByRole('button', { name: /Train EUR 89.90/ }));
+      await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+
+      await vi.waitFor(() => expect(transportCalls(fetchMock)).toHaveLength(2));
+      expect(transportCalls(fetchMock, 'DELETE')[0][0]).toBe('http://localhost:4000/trips/7/transports/t1');
+    });
+
+    it('hides the add button from a viewer', async () => {
+      api();
+      open(3);
+      await screen.findByRole('heading', { name: 'Italy 2026' });
+      expect(screen.queryByRole('button', { name: 'Add transport' })).not.toBeInTheDocument();
+    });
+  });
 });

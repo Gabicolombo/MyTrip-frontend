@@ -13,6 +13,9 @@ import DestinationTabs from '@/components/trip/DestinationTabs';
 import VisaCheck from '@/components/trip/sidebar/VisaCheck';
 import Participants from '@/components/trip/sidebar/Participants';
 import BudgetModal from '@/components/trip/BudgetModal';
+import TransportForm from '@/components/trip/TransportForm';
+import ConfirmModal from '@/components/common/confirmModal';
+import type { Transport } from '@/lib/transport';
 
 const TRIP_DETAILS_QUERY = `
   query tripDetails($id: Int!) {
@@ -77,6 +80,38 @@ export default function TripDetailsPage() {
   const [trip, setTrip] = useState<TripDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [transports, setTransports] = useState<Transport[]>([]);
+  const [transportsVersion, setTransportsVersion] = useState(0);
+  const [transportForm, setTransportForm] = useState<{ from: Destination; to: Destination; transport?: Transport } | null>(null);
+  const [deletingTransport, setDeletingTransport] = useState<Transport | null>(null);
+
+  useEffect(() => {
+    async function fetchTransports() {
+      try {
+        const response = await fetch(`${TRIP_API_URL}/trips/${id}/transports`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        });
+        if (!response.ok) throw new Error('Unable to load transports.');
+        const data = await response.json();
+        setTransports(Array.isArray(data) ? data : []);
+      } catch {
+        setTransports([]);
+      }
+    }
+    if (id) fetchTransports();
+  }, [id, transportsVersion]);
+
+  async function deleteTransport(transport: Transport) {
+    try {
+      const response = await fetch(`${TRIP_API_URL}/trips/${id}/transports/${transport.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) throw new Error('Unable to delete transport.');
+    } finally {
+      setTransportsVersion(version => version + 1);
+    }
+  }
 
   useEffect(() => {
     async function fetchTripDetails() {
@@ -150,7 +185,35 @@ export default function TripDetailsPage() {
         onTabChange={setActiveTab}
         onEdit={() => setEditingTrip(true)}
         onBudget={() => setBudgetOpen(true)}
+        transports={transports}
+        canEdit={canEdit}
+        onAddTransport={(from, to) => setTransportForm({ from, to })}
+        onEditTransport={transport => {
+          const from = trip.destinations.find(dest => dest.id === transport.fromDestinationId);
+          const to = trip.destinations.find(dest => dest.id === transport.toDestinationId);
+          if (from && to) setTransportForm({ from, to, transport });
+        }}
+        onDeleteTransport={setDeletingTransport}
       />
+      {transportForm && (
+        <TransportForm
+          key={transportForm.transport?.id ?? `${transportForm.from.id}-${transportForm.to.id}`}
+          tripId={trip.id}
+          from={transportForm.from}
+          to={transportForm.to}
+          transport={transportForm.transport}
+          onClose={() => setTransportForm(null)}
+          onSuccess={() => setTransportsVersion(version => version + 1)}
+        />
+      )}
+      {deletingTransport && (
+        <ConfirmModal
+          title="Confirm Deletion"
+          message="Are you sure you want to delete this transport? This action cannot be undone."
+          onConfirm={() => { void deleteTransport(deletingTransport).catch(() => {}); setDeletingTransport(null); }}
+          onCancel={() => setDeletingTransport(null)}
+        />
+      )}
       {budgetOpen && <BudgetModal tripId={trip.id} tripTitle={trip.title} destinations={trip.destinations} onClose={() => setBudgetOpen(false)} />}
       <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px] gap-6 items-start">
       

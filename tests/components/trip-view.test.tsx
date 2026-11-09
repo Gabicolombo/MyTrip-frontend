@@ -78,8 +78,8 @@ describe('TripHeader', () => {
   const trip = {
     title: 'Italy 2026', description: 'Family trip', startDate: '2026-06-01', endDate: '2026-06-10', imageUrl: 'https://img.example/italy.jpg',
     destinations: [
-      { city: 'Rome', country: 'IT', startDate: '2026-06-01', endDate: '2026-06-05' },
-      { city: 'Paris', country: 'FR', startDate: '2026-06-05', endDate: '2026-06-10' },
+      { id: 'd1', city: 'Rome', country: 'IT', startDate: '2026-06-01', endDate: '2026-06-05' },
+      { id: 'd2', city: 'Paris', country: 'FR', startDate: '2026-06-05', endDate: '2026-06-10' },
     ],
   };
 
